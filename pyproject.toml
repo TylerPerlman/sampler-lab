@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sampler-lab"
+version = "0.12.0"
+description = "Transparent implementations and validation experiments for Monte Carlo sampling"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Tyler Perlman" }]
+dependencies = ["numpy>=2.0"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2",
+  "matplotlib>=3.8",
+  "mkdocs-material>=9.5",
+  "mypy>=1.13",
+  "pytest>=8",
+  "ruff>=0.8",
+  "twine>=5",
+]
+
+[project.scripts]
+sampler-lab-disk-benchmark = "sampler_lab.experiments:disk_benchmark_main"
+sampler-lab-importance-demo = "sampler_lab.experiments:importance_sampling_main"
+sampler-lab-particle-demo = "sampler_lab.experiments:particle_methods_main"
+sampler-lab-markov-demo = "sampler_lab.experiments:markov_theory_main"
+sampler-lab-ising-demo = "sampler_lab.experiments:ising_mcmc_main"
+sampler-lab-annealing-demo = "sampler_lab.experiments:annealing_main"
+sampler-lab-langevin-demo = "sampler_lab.experiments:langevin_main"
+sampler-lab-hamiltonian-demo = "sampler_lab.experiments:hamiltonian_main"
+sampler-lab-geometry-demo = "sampler_lab.experiments:geometry_main"
+sampler-lab-policy-demo = "sampler_lab.policy_experiments:policy_gradient_main"
+sampler-lab-rare-event-demo = "sampler_lab.rare_event_experiments:rare_event_main"
+sampler-lab-benchmark = "sampler_lab.benchmark_experiments:cross_method_benchmark_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+markers = [
+  "statistical: deterministic-seed statistical validation tests",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["sampler_lab"]
+mypy_path = "src"

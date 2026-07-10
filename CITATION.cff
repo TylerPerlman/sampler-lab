@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: Sampler Lab
+message: "If this software is useful in your work, please cite it using this metadata."
+type: software
+authors:
+  - family-names: Perlman
+    given-names: Tyler
+version: 0.12.0
+date-released: 2026-07-10
+license: MIT

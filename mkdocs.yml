@@ -1,0 +1,64 @@
+site_name: Sampler Lab
+site_description: Transparent Monte Carlo methods, diagnostics, and benchmark laboratories
+site_url: https://tylerperlman.github.io/sampler-lab/
+repo_url: https://github.com/TylerPerlman/sampler-lab
+repo_name: TylerPerlman/sampler-lab
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Roadmap: roadmap.md
+  - Public references: references.md
+  - Public API: public_api.md
+  - Benchmarking: benchmarking.md
+  - Methods:
+      - Markov theory: methods/markov_theory.md
+      - Gibbs, Metropolis, and Ising: methods/gibbs_metropolis.md
+      - Annealed paths: methods/annealed_paths.md
+      - Langevin dynamics: methods/langevin_dynamics.md
+      - Hamiltonian dynamics: methods/hamiltonian_dynamics.md
+      - Conditioning and ensembles: methods/conditioning_ensembles.md
+      - Adaptive and policy sampling: methods/adaptive_policy_sampling.md
+      - Rare events: methods/rare_events.md
+  - Design plans:
+      - Policy-gradient sampling: plans/policy_gradient_sampling.md
+      - Cross-method benchmarks: plans/cross_method_benchmarks.md
+  - Reference benchmark:
+      - Overview: reference/continuous_benchmark/README.md
+      - Summary: reference/continuous_benchmark/benchmark_summary.md
+
+strict: true
