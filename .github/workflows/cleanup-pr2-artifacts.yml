@@ -1,0 +1,33 @@
+name: Clean PR 2 build artifacts
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cleanup-pr2-artifacts
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/notebook-sequential-markov-v2
+          fetch-depth: 0
+      - name: Remove generated documentation artifacts
+        run: |
+          rm -rf site .cache
+          rm .github/workflows/cleanup-pr2-artifacts.yml
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Remove generated documentation artifacts"
+          git push
