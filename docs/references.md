@@ -1,8 +1,10 @@
 # Public References and Provenance
 
-Sampler Lab is independently authored. Implementations and explanations are based on standard
-mathematical definitions and publicly available literature. The project does not include private
-source documents, copied prompts, or third-party diagrams.
+Sampler Lab is authored by Tyler Perlman with AI-assisted implementation and documentation.
+Mathematical claims, generated code, and examples are reviewed through deterministic identities,
+strict typing, executable documentation, invariance checks, fixed-seed statistical tests, and
+cross-method reference experiments. The project does not include private source documents, copied
+course assignments, copied prompts, or third-party diagrams.
 
 The following references provide public provenance for major algorithm families:
 
