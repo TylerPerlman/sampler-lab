@@ -1,0 +1,180 @@
+        code('''
+        bad_chain = scale_trajectories[3.5]
+        bad_states = bad_chain.states[burn_in:]
+        accepted_destinations = bad_chain.states[1:][bad_chain.accepted]
+        full_variance = np.var(bad_states[:, 0])
+        jump_variance = np.var(accepted_destinations[:, 0])
+        print("oversized-proposal acceptance:", bad_chain.acceptance_rate)
+        print("variance with rejection repeats:", round(float(full_variance), 4))
+        print("variance after deleting repeats:", round(float(jump_variance), 4))
+
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        bins = np.linspace(-3.5, 3.5, 55)
+        ax.hist(bad_states[:, 0], bins=bins, density=True, histtype="step", linewidth=1.8, label="MH states")
+        ax.hist(
+            accepted_destinations[:, 0],
+            bins=bins,
+            density=True,
+            histtype="step",
+            linewidth=1.8,
+            label="accepted destinations only",
+        )
+        normal = np.exp(-0.5 * bins * bins) / np.sqrt(2.0 * np.pi)
+        ax.plot(bins, normal, linestyle="--", label="target marginal")
+        ax.set_xlabel("x[0]")
+        ax.set_ylabel("density")
+        ax.set_title("The jump chain is not the Metropolis--Hastings chain")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 3. Gibbs and Metropolis on a periodic Ising model
+
+        For spins $s_i\in\{-1,+1\}$,
+
+        $$
+        \pi(s)\propto \exp\left[\beta\left(J\sum_{\langle i,j\rangle}s_is_j
+        +h\sum_i s_i\right)\right].
+        $$
+
+        A single-site Gibbs update samples the exact conditional spin law. A single-spin Metropolis
+        update proposes a flip and uses its local energy change. Random scan and deterministic sweep
+        both preserve the target, but the sweep is a composition kernel and is generally not
+        reversible.
+
+        We first use a $2\times2$ lattice, where exact enumeration gives a reference distribution for
+        absolute magnetization.
+        '''),
+        code('''
+        def run_ising_series(model, method, rng, sweeps, burn):
+            if method == "random-scan Gibbs":
+                kernel = random_scan_ising_gibbs(model)
+                updates_per_sweep = model.n_sites
+            elif method == "deterministic-sweep Gibbs":
+                kernel = deterministic_sweep_ising_gibbs(model)
+                updates_per_sweep = 1
+            elif method == "single-spin Metropolis":
+                kernel = RandomScanIsingMetropolisKernel(model)
+                updates_per_sweep = model.n_sites
+            else:
+                raise ValueError(method)
+
+            state = model.random_state(rng)
+            magnetization = np.empty(sweeps)
+            energy = np.empty(sweeps)
+            accepted = 0
+            observed = 0
+            for sweep in range(burn + sweeps):
+                for _ in range(updates_per_sweep):
+                    transition = kernel.step(state, rng)
+                    state = np.asarray(transition.state, dtype=np.float64)
+                    if transition.accepted is not None:
+                        observed += 1
+                        accepted += int(transition.accepted)
+                if sweep >= burn:
+                    index = sweep - burn
+                    magnetization[index] = model.magnetization(state, normalized=True)
+                    energy[index] = model.energy(state) / model.n_sites
+            acceptance = None if observed == 0 else accepted / observed
+            return magnetization, energy, acceptance
+
+        small_model = IsingModel(2, 0.62)
+        exact_small = exact_ising_distribution(small_model)
+        methods = ("random-scan Gibbs", "deterministic-sweep Gibbs", "single-spin Metropolis")
+        ising_rngs = spawn_rngs(SEED + 220, len(methods))
+        small_runs = {}
+        small_sweeps = 5000 if QUICK_MODE else 35000
+        small_burn = 800 if QUICK_MODE else 4000
+
+        for method, rng in zip(methods, ising_rngs, strict=True):
+            magnetization, energy, acceptance = run_ising_series(
+                small_model, method, rng, small_sweeps, small_burn
+            )
+            small_runs[method] = (magnetization, energy, acceptance)
+            print(
+                f"{method:>27}: E|m|={np.mean(np.abs(magnetization)):.4f}, "
+                f"IAT={empirical_integrated_autocorrelation_time(np.abs(magnetization)):.2f}, "
+                f"acceptance={acceptance}"
+            )
+        '''),
+        code('''
+        exact_abs_values = np.abs(exact_small.magnetizations) / small_model.n_sites
+        support = np.unique(exact_abs_values)
+        exact_probabilities = np.array(
+            [np.sum(exact_small.probabilities[exact_abs_values == value]) for value in support]
+        )
+
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        width = 0.06
+        offsets = np.linspace(-width, width, len(methods))
+        ax.bar(support - 1.6 * width, exact_probabilities, width=width, label="exact")
+        total_variation_errors = []
+        for offset, method in zip(offsets, methods, strict=True):
+            observed = np.abs(small_runs[method][0])
+            empirical = np.array([np.mean(np.isclose(observed, value)) for value in support])
+            total_variation_errors.append(0.5 * np.sum(np.abs(empirical - exact_probabilities)))
+            ax.bar(support + offset + width, empirical, width=width, alpha=0.7, label=method)
+        ax.set_xlabel("absolute magnetization per site")
+        ax.set_ylabel("probability")
+        ax.set_title("Small-lattice simulation agrees with exact enumeration")
+        ax.legend(fontsize=8)
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 4. Low-temperature mode trapping
+
+        At larger $\beta$, positive- and negative-magnetization phases are separated by a low-density
+        region. A local exact-invariant kernel can remain in one phase for a very long time. The trace
+        below uses a modest lattice and deliberately short runs: it is a diagnostic of metastability,
+        not evidence that one phase is the whole target.
+        '''),
+        code('''
+        lattice_size = 5 if QUICK_MODE else 7
+        trace_sweeps = 1200 if QUICK_MODE else 5000
+        trace_burn = 250 if QUICK_MODE else 800
+        temperatures = [0.30, 0.58]
+        trace_rngs = spawn_rngs(SEED + 230, len(temperatures))
+        trace_runs = {}
+
+        for beta, rng in zip(temperatures, trace_rngs, strict=True):
+            model = IsingModel(lattice_size, beta)
+            magnetization, _, _ = run_ising_series(
+                model, "random-scan Gibbs", rng, trace_sweeps, trace_burn
+            )
+            trace_runs[beta] = magnetization
+
+        fig, ax = plt.subplots(figsize=(9.0, 4.8))
+        for beta, values in trace_runs.items():
+            ax.plot(values, linewidth=0.8, label=fr"$\beta={beta}$")
+        ax.axhline(0.0, linewidth=0.8)
+        ax.set_xlabel("recorded lattice sweep")
+        ax.set_ylabel("magnetization per site")
+        ax.set_title("A local exact kernel can be metastable at low temperature")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## When to use these kernels
+
+        Metropolis--Hastings is a general correction mechanism when a proposal can be sampled and
+        evaluated in both directions. Gibbs sampling is attractive when exact conditional draws are
+        available. Both require diagnostics tied to the estimand and computational cost. Proposal
+        tuning must finish before an exact-invariant evaluation run is interpreted.
+
+        Further experiments:
+
+        - replace the diagonal random walk by a covariance-matched proposal;
+        - compare random-scan and deterministic-sweep exact transition matrices on the $2\times2$
+          Ising model;
+        - increase lattice size near criticality and watch finite-run IAT estimates become unstable.
+        '''),
+        code('''
+        covariance_error = np.max(np.abs(np.cov(retained.T) - target_covariance))
+        low_temperature_sign_changes = np.count_nonzero(
+            np.sign(trace_runs[0.58][1:]) != np.sign(trace_runs[0.58][:-1])
+        )
+        print("largest covariance entry error:", round(float(covariance_error), 4))
+        print("low-temperature sign changes:", low_temperature_sign_changes)
+        print("small-lattice TV errors:", np.round(total_variation_errors, 4))
+
+        assert 0.05 < trajectory.acceptance_rate < 0.95
