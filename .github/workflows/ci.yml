@@ -34,11 +34,14 @@ jobs:
       - run: mypy src/sampler_lab
       - run: python -m compileall -q src tests tools
       - run: mkdocs build --strict
-      - name: Build and inspect distributions
+      - name: Build distributions
+        run: python -m build
+      - name: Check distribution metadata
+        run: python -m twine check dist/*
+      - name: Scan built artifacts for publication hygiene
+        run: python tools/publication_check.py --root . --artifacts dist site
+      - name: Verify wheel typing marker
         run: |
-          python -m build
-          python -m twine check dist/*
-          python tools/publication_check.py --root . --artifacts dist site
           python - <<'PY'
           import glob
           import zipfile
@@ -48,7 +51,8 @@ jobs:
           with zipfile.ZipFile(wheel[0]) as archive:
               assert "sampler_lab/py.typed" in archive.namelist()
           PY
-          python -m pip install --force-reinstall --no-deps dist/*.whl
+      - name: Install built wheel
+        run: python -m pip install --force-reinstall --no-deps dist/*.whl
       - name: Verify installed metadata, PEP 561 typing, and console entry points
         shell: bash
         run: |
