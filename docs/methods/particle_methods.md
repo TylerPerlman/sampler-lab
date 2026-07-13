@@ -1,5 +1,9 @@
 # Sequential Importance Sampling and Particle Resampling
 
+!!! tip "Visual tutorial"
+    Work through [Particle methods](../notebooks/03_particle_methods.ipynb) for executed
+    resampling, ancestry, and self-avoiding-walk experiments using the public API.
+
 ## Particle clouds
 
 A `ParticleCloud` stores particles \(X^{(i)}\) and normalized log weights

@@ -63,38 +63,64 @@ supporting_symbols = [
 [[notebooks]]
 path = "docs/notebooks/03_particle_methods.ipynb"
 family = "particle methods"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["weighted", "approximate", "diagnostic"]
 coverage = ["sampler_lab.particles.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.spawn_rngs",
+  "sampler_lab.models.count_self_avoiding_walks",
+  "sampler_lab.models.sample_self_avoiding_walks",
+]
 
 [[notebooks]]
 path = "docs/notebooks/04_finite_state_markov_theory.ipynb"
 family = "finite-state Markov theory"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["exact_invariant", "diagnostic"]
 coverage = ["sampler_lab.markov.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.spawn_rngs",
+  "sampler_lab.models.deterministic_cycle",
+  "sampler_lab.models.ring_cosine_observable",
+  "sampler_lab.models.ring_random_walk",
+]
 
 [[notebooks]]
 path = "docs/notebooks/05_metropolis_gibbs_and_ising.ipynb"
 family = "Metropolis, Gibbs, and Ising"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["exact_invariant", "diagnostic"]
 coverage = ["sampler_lab.mcmc.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.OperationCounter",
+  "sampler_lab.spawn_rngs",
+  "sampler_lab.diagnostics.empirical_integrated_autocorrelation_time",
+  "sampler_lab.models.GaussianTarget",
+  "sampler_lab.models.IsingModel",
+  "sampler_lab.models.RandomScanIsingMetropolisKernel",
+  "sampler_lab.models.deterministic_sweep_ising_gibbs",
+  "sampler_lab.models.exact_ising_distribution",
+  "sampler_lab.models.random_scan_ising_gibbs",
+]
 
 [[notebooks]]
 path = "docs/notebooks/06_annealed_paths_and_free_energy.ipynb"
 family = "annealed paths and free energy"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["weighted", "approximate", "diagnostic"]
 coverage = ["sampler_lab.annealing.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.spawn_rngs",
+  "sampler_lab.models.IsingGibbsPopulationTransition",
+  "sampler_lab.models.IsingModel",
+  "sampler_lab.models.exact_ising_distribution",
+  "sampler_lab.particles.ParticleCloud",
+  "sampler_lab.particles.SystematicResampler",
+]
 
 [[notebooks]]
 path = "docs/notebooks/07_langevin_sampling.ipynb"

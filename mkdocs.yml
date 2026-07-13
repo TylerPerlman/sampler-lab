@@ -67,6 +67,10 @@ nav:
       - Orientation and diagnostics: notebooks/00_orientation_and_diagnostics.ipynb
       - Exact and IID sampling: notebooks/01_exact_and_iid_sampling.ipynb
       - Importance sampling: notebooks/02_importance_sampling.ipynb
+      - Particle methods: notebooks/03_particle_methods.ipynb
+      - Finite-state Markov theory: notebooks/04_finite_state_markov_theory.ipynb
+      - Metropolis, Gibbs, and Ising: notebooks/05_metropolis_gibbs_and_ising.ipynb
+      - Annealed paths and free energy: notebooks/06_annealed_paths_and_free_energy.ipynb
   - API reference: api.md
   - Benchmarking: benchmarking.md
   - Performance: performance.md

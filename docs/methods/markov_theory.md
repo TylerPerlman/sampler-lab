@@ -1,5 +1,9 @@
 # Finite-State Markov Theory
 
+!!! tip "Visual tutorial"
+    Work through [Finite-state Markov theory](../notebooks/04_finite_state_markov_theory.ipynb)
+    for exact operator calculations, simulated validation, and Poisson-error predictions.
+
 This phase treats a finite Markov chain as an exact linear operator rather than
 starting with a simulated histogram. That gives stronger validation: invariance,
 reversibility, periodicity, Poisson equations, and Monte Carlo error can all be
