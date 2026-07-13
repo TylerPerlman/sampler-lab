@@ -39,14 +39,14 @@ jobs:
           from pathlib import Path
 
           module = ast.parse(Path("src/sampler_lab/_version.py").read_text(encoding="utf-8"))
-          assignments = {
+          values = {
               target.id: ast.literal_eval(node.value)
               for node in module.body
               if isinstance(node, ast.Assign)
               for target in node.targets
               if isinstance(target, ast.Name)
           }
-          print(assignments["__version__"])
+          print(values["__version__"])
           PY
           )
           test "$RELEASE_TAG" = "v$PACKAGE_VERSION"
