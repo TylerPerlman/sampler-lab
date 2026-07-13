@@ -50,6 +50,7 @@ jobs:
               "direct.ratio_estimate": "direct.ratio.value",
               "direct.log_ratio_estimate": "direct.ratio.log_value",
               "direct.free_energy_standard_error": "direct.standard_error",
+              "jarzynski.log_ratio_estimate": "jarzynski.ratio.log_value",
           }
           for cell in notebook["cells"]:
               if cell.get("cell_type") != "code":
