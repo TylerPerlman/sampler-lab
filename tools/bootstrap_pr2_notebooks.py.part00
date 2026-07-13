@@ -1,0 +1,180 @@
+"""Generate PR 2 tutorial notebooks and wire them into the documentation."""
+
+from __future__ import annotations
+
+import textwrap
+from pathlib import Path
+
+import nbformat
+
+ROOT = Path(__file__).resolve().parents[1]
+NOTEBOOK_DIR = ROOT / "docs" / "notebooks"
+
+
+def md(source: str) -> nbformat.NotebookNode:
+    return nbformat.v4.new_markdown_cell(textwrap.dedent(source).strip() + "\n")
+
+
+def code(source: str) -> nbformat.NotebookNode:
+    return nbformat.v4.new_code_cell(textwrap.dedent(source).strip() + "\n")
+
+
+def notebook(cells: list[nbformat.NotebookNode]) -> nbformat.NotebookNode:
+    return nbformat.v4.new_notebook(
+        cells=cells,
+        metadata={
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3",
+            },
+            "language_info": {"name": "python", "pygments_lexer": "ipython3"},
+        },
+    )
+
+
+def write_notebook(name: str, cells: list[nbformat.NotebookNode]) -> None:
+    NOTEBOOK_DIR.mkdir(parents=True, exist_ok=True)
+    nbformat.write(notebook(cells), NOTEBOOK_DIR / name)
+
+
+def common_setup(imports: str, *, seed: int = 2022) -> str:
+    return f'''
+    import importlib.metadata
+    import os
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    {textwrap.dedent(imports).strip()}
+
+    QUICK_MODE = os.environ.get("SAMPLER_LAB_NOTEBOOK_MODE") == "quick"
+    SEED = {seed}
+    FIGURE_COUNT = 0
+
+    def finish_figure(fig):
+        global FIGURE_COUNT
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+        FIGURE_COUNT += 1
+
+    print("sampler-lab", importlib.metadata.version("sampler-lab"))
+    print("execution mode:", "quick" if QUICK_MODE else "publication")
+    print("master seed:", SEED)
+    '''
+
+
+def particle_notebook() -> list[nbformat.NotebookNode]:
+    return [
+        md(r'''
+        # Particle methods: weights, resampling, and ancestry
+
+        Sequential Monte Carlo represents a changing distribution by a **weighted population**. The
+        central difficulty is not drawing points; it is controlling the concentration of the weights
+        without erasing the evidence that concentration occurred.
+
+        This notebook uses only the public `sampler_lab.particles` and `sampler_lab.models`
+        namespaces. It develops four linked ideas:
+
+        1. immutable weighted particle clouds;
+        2. multinomial, systematic, and floor-plus-Bernoulli resampling;
+        3. sequential importance sampling for self-avoiding-walk growth;
+        4. genealogical collapse as a cost of repeated resampling.
+
+        **Output semantics:** weighted particles before resampling; approximate unweighted particles
+        after resampling; unbiased normalizing-constant estimates under the stated proposal rules.
+
+        Related pages: [particle-method theory](../methods/particle_methods.md),
+        [public API](../api.md), and [benchmark semantics](../benchmarking.md).
+        '''),
+        code(common_setup('''
+        from sampler_lab import spawn_rngs
+        from sampler_lab.models import count_self_avoiding_walks, sample_self_avoiding_walks
+        from sampler_lab.particles import (
+            BernoulliResampler,
+            MultinomialResampler,
+            ParticleCloud,
+            SystematicResampler,
+            minimal_conditional_variances,
+            multinomial_conditional_variances,
+            offspring_counts,
+            resampling_diagnostics,
+        )
+        ''')),
+        md(r'''
+        ## 1. A weighted cloud is a probability measure
+
+        For particles $x_i$ and normalized weights $W_i$, the empirical measure is
+
+        $$
+        \widehat\pi_N = \sum_{i=1}^N W_i\,\delta_{x_i},
+        \qquad \sum_i W_i=1.
+        $$
+
+        `ParticleCloud` normalizes supplied log weights, makes both arrays immutable, and exposes
+        weighted expectations and Kish effective sample size
+
+        $$
+        \operatorname{ESS}_w = \frac{1}{\sum_i W_i^2}.
+        $$
+
+        ESS is a concentration diagnostic, not a claim that the particles are independent.
+        '''),
+        code('''
+        locations = np.arange(5, dtype=np.float64)[:, None]
+        raw_weights = np.array([0.04, 0.08, 0.15, 0.23, 0.50])
+        cloud = ParticleCloud(locations, np.log(raw_weights))
+        weighted_mean = cloud.expectation(lambda x: x[:, 0])
+
+        print("normalized weights:", np.round(cloud.weights, 3))
+        print("weighted mean:", round(float(weighted_mean), 4))
+        print("weight ESS:", round(cloud.effective_sample_size, 3), "of", cloud.n_particles)
+        print("largest normalized weight:", round(cloud.diagnostics.max_normalized_weight, 3))
+
+        assert np.isclose(np.sum(cloud.weights), 1.0)
+        assert np.isclose(weighted_mean, np.dot(raw_weights, locations[:, 0]))
+        '''),
+        md(r'''
+        ## 2. Resampling is unbiased, but its noise and dependence differ
+
+        With target population $N$, unbiased offspring counts satisfy
+
+        $$
+        \mathbb E[N_i\mid W]=NW_i.
+        $$
+
+        Multinomial resampling draws every parent independently and has marginal variance
+        $NW_i(1-W_i)$. Floor-plus-Bernoulli and systematic resampling attain the minimum possible
+        marginal variance $r_i(1-r_i)$, where $r_i$ is the fractional part of $NW_i$.
+
+        The next experiment repeats each scheme with identical target weights. We expect all three
+        empirical means to match $NW$, but multinomial variances to be much larger. Systematic and
+        Bernoulli have similar marginal variances while different joint dependence; Bernoulli also
+        has a random total population.
+        '''),
+        code('''
+        weights = np.array([0.035, 0.075, 0.14, 0.25, 0.50])
+        target_population = 80
+        repetitions = 700 if QUICK_MODE else 5000
+        schemes = {
+            "multinomial": MultinomialResampler(),
+            "systematic": SystematicResampler(),
+            "Bernoulli": BernoulliResampler(),
+        }
+        scheme_rngs = spawn_rngs(SEED + 10, len(schemes))
+        count_samples = {}
+        population_samples = {}
+
+        for (name, scheme), rng in zip(schemes.items(), scheme_rngs, strict=True):
+            counts = np.empty((repetitions, weights.size), dtype=np.float64)
+            totals = np.empty(repetitions, dtype=np.float64)
+            for replicate in range(repetitions):
+                parents = scheme.resample(weights, rng, target_population)
+                counts[replicate] = offspring_counts(parents, weights.size)
+                totals[replicate] = parents.size
+            count_samples[name] = counts
+            population_samples[name] = totals
+
+        expected_counts = target_population * weights
+        empirical_means = {name: values.mean(axis=0) for name, values in count_samples.items()}
