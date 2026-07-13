@@ -61,4 +61,5 @@ mkdocs build --strict
 
 GitHub Actions validates formatting, linting, strict typing, compilation, package installation,
 console entry points, unit tests, isolated statistical tests, documentation, publication hygiene,
-CodeQL analysis, and release builds. Dependabot monitors Python and GitHub Actions dependencies.
+and release builds. GitHub default setup provides CodeQL scanning when the repository is eligible.
+Dependabot monitors Python and GitHub Actions dependencies.

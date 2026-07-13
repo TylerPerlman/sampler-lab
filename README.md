@@ -1,7 +1,6 @@
 # Sampler Lab
 
-[![CI](https://github.com/TylerPerlman/sampler-lab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TylerPerlman/sampler-lab/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/TylerPerlman/sampler-lab/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/TylerPerlman/sampler-lab/actions/workflows/codeql.yml)
+[![CI](https://github.com/TylerPerlman/sampler-lab-public/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TylerPerlman/sampler-lab-public/actions/workflows/ci.yml)
 [![Python 3.11–3.13](https://img.shields.io/badge/python-3.11--3.13-blue.svg)](https://www.python.org/)
 [![mypy: strict](https://img.shields.io/badge/mypy-strict-blue.svg)](https://mypy-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)

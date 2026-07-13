@@ -58,6 +58,6 @@ def mean_cross_walker_correlation(values: ArrayLike) -> float:
     valid = standard_deviations > 0.0
     if np.count_nonzero(valid) < 2:
         return float("nan")
-    correlations = np.corrcoef(matrix[:, valid], rowvar=False)
+    correlations = np.asarray(np.corrcoef(matrix[:, valid], rowvar=False), dtype=np.float64)
     upper = correlations[np.triu_indices(correlations.shape[0], k=1)]
     return float(np.mean(upper))
