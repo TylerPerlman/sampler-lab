@@ -1,8 +1,8 @@
 site_name: Sampler Lab
 site_description: Transparent Monte Carlo methods, diagnostics, and benchmark laboratories
-site_url: https://tylerperlman.github.io/sampler-lab-public/
-repo_url: https://github.com/TylerPerlman/sampler-lab-public
-repo_name: TylerPerlman/sampler-lab-public
+site_url: https://tylerperlman.github.io/sampler-lab/
+repo_url: https://github.com/TylerPerlman/sampler-lab
+repo_name: TylerPerlman/sampler-lab
 edit_uri: edit/main/docs/
 
 theme:
