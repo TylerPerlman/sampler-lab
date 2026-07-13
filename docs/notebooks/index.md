@@ -5,6 +5,9 @@ namespaces, fixed named seeds, and method-appropriate diagnostics. The console d
 NumPy-only, print-based reproduction layer; notebooks add derivations, plots, parameter studies, and
 controlled failures.
 
+The current pilot establishes the notebook standard with three tutorials before the remaining method
+families are implemented in later pull requests.
+
 ## Start here
 
 | Notebook | Use it to learn | Matching console surface |
