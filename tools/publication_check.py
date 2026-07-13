@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import codecs
+import json
 import re
 import subprocess
 import sys
@@ -12,8 +13,10 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 SKIP_PARTS = {
+    ".cache",
     ".git",
     ".mypy_cache",
     ".pytest_cache",
@@ -114,24 +117,66 @@ def scan_text(name: str, text: str) -> list[Finding]:
     return findings
 
 
+def notebook_source(raw_source: Any) -> str | None:
+    if isinstance(raw_source, str):
+        return raw_source
+    if isinstance(raw_source, list) and all(isinstance(line, str) for line in raw_source):
+        return "".join(raw_source)
+    return None
+
+
+def scan_notebook(name: str, text: str) -> list[Finding]:
+    try:
+        notebook = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return [Finding(name, f"invalid notebook JSON: {exc}")]
+    cells = notebook.get("cells")
+    if not isinstance(cells, list):
+        return [Finding(name, "notebook cells must be a list")]
+
+    findings: list[Finding] = []
+    for cell_number, cell in enumerate(cells, start=1):
+        if not isinstance(cell, dict) or cell.get("cell_type") not in {"code", "markdown"}:
+            continue
+        source = notebook_source(cell.get("source"))
+        if source is None:
+            findings.append(Finding(name, f"cell {cell_number}: source must be text or text lines"))
+            continue
+        findings.extend(scan_text(f"{name}:cell-{cell_number}", source))
+    return findings
+
+
+def read_utf8(path: Path, name: str) -> tuple[str | None, list[Finding]]:
+    try:
+        return path.read_text(encoding="utf-8"), []
+    except UnicodeDecodeError:
+        return None, [Finding(name, "expected text file is not valid UTF-8")]
+
+
 def scan_tree(root: Path) -> list[Finding]:
     findings: list[Finding] = []
     for path in sorted(root.rglob("*")):
         if not path.is_file() or should_skip(path.relative_to(root)):
             continue
         relative = path.relative_to(root)
-        findings.extend(scan_text(str(relative), str(relative)))
-        if path.suffix.lower() in BLOCKED_BINARY_EXTENSIONS:
-            findings.append(Finding(str(relative), "blocked binary document type"))
+        name = str(relative)
+        findings.extend(scan_text(name, name))
+        suffix = path.suffix.lower()
+        if suffix in BLOCKED_BINARY_EXTENSIONS:
+            findings.append(Finding(name, "blocked binary document type"))
             continue
-        if path.suffix.lower() not in TEXT_EXTENSIONS:
+        if suffix == ".ipynb":
+            text, read_findings = read_utf8(path, name)
+            findings.extend(read_findings)
+            if text is not None:
+                findings.extend(scan_notebook(name, text))
             continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            findings.append(Finding(str(relative), "expected text file is not valid UTF-8"))
+        if suffix not in TEXT_EXTENSIONS:
             continue
-        findings.extend(scan_text(str(relative), text))
+        text, read_findings = read_utf8(path, name)
+        findings.extend(read_findings)
+        if text is not None:
+            findings.extend(scan_text(name, text))
     return findings
 
 
@@ -161,6 +206,22 @@ def scan_history(root: Path) -> list[Finding]:
     return scan_text("git-history", result.stdout)
 
 
+def scan_artifact_text(path: Path) -> list[Finding]:
+    name = str(path)
+    suffix = path.suffix.lower()
+    if suffix == ".ipynb":
+        text, findings = read_utf8(path, name)
+        if text is not None:
+            findings.extend(scan_notebook(name, text))
+        return findings
+    if suffix not in TEXT_EXTENSIONS:
+        return []
+    text, findings = read_utf8(path, name)
+    if text is not None:
+        findings.extend(scan_text(name, text))
+    return findings
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path.cwd())
@@ -183,12 +244,7 @@ def main() -> int:
             if archive_findings:
                 findings.extend(archive_findings)
                 continue
-            if path.suffix.lower() in TEXT_EXTENSIONS:
-                try:
-                    text = path.read_text(encoding="utf-8")
-                except UnicodeDecodeError:
-                    continue
-                findings.extend(scan_text(str(path), text))
+            findings.extend(scan_artifact_text(path))
 
     if findings:
         for finding in findings:
