@@ -26,6 +26,8 @@ theme:
 
 plugins:
   - search
+  - mkdocs-jupyter:
+      include_source: true
   - mkdocstrings:
       handlers:
         python:
@@ -60,6 +62,11 @@ nav:
   - Roadmap: roadmap.md
   - Public references: references.md
   - Public API policy: public_api.md
+  - Tutorial notebooks:
+      - Overview: notebooks/index.md
+      - Orientation and diagnostics: notebooks/00_orientation_and_diagnostics.ipynb
+      - Exact and IID sampling: notebooks/01_exact_and_iid_sampling.ipynb
+      - Importance sampling: notebooks/02_importance_sampling.ipynb
   - API reference: api.md
   - Benchmarking: benchmarking.md
   - Performance: performance.md
