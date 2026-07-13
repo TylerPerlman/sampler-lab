@@ -130,8 +130,10 @@ def validate_manifest(root: Path, manifest_path: Path) -> list[str]:
         size_limit = 0
 
     namespaces = manifest.get("sampling_namespaces")
-    if not isinstance(namespaces, list) or not namespaces or not all(
-        isinstance(namespace, str) for namespace in namespaces
+    if (
+        not isinstance(namespaces, list)
+        or not namespaces
+        or not all(isinstance(namespace, str) for namespace in namespaces)
     ):
         return [*errors, "sampling_namespaces must be a nonempty string list"]
     if len(namespaces) != len(set(namespaces)):
@@ -170,8 +172,10 @@ def validate_manifest(root: Path, manifest_path: Path) -> list[str]:
             errors.append(f"{label}: status must be one of {sorted(ALLOWED_STATUSES)}")
         if mode not in ALLOWED_MODES:
             errors.append(f"{label}: mode must be one of {sorted(ALLOWED_MODES)}")
-        if not isinstance(semantics, list) or not semantics or not all(
-            isinstance(value, str) for value in semantics
+        if (
+            not isinstance(semantics, list)
+            or not semantics
+            or not all(isinstance(value, str) for value in semantics)
         ):
             errors.append(f"{label}: output_semantics must be a nonempty string list")
         else:
