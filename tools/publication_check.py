@@ -77,6 +77,10 @@ ENCODED_TERMS = [
 WORD_PATTERNS = ["pbhefr", "yrpgher", "rkrepvfr"]
 NUMBERED_WORDS = ["puncgre", "rkrepvfr"]
 DATE_PATTERN = re.compile(r"\b(?:Sep|Oct|Nov)\.?\s+\d{1,2},?\s+2022\b", re.IGNORECASE)
+IMAGE_DATA_URI_PATTERN = re.compile(
+    r"data:image/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=\r\n]+",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -218,6 +222,8 @@ def scan_artifact_text(path: Path) -> list[Finding]:
         return []
     text, findings = read_utf8(path, name)
     if text is not None:
+        if suffix == ".html":
+            text = IMAGE_DATA_URI_PATTERN.sub("<embedded-image-data>", text)
         findings.extend(scan_text(name, text))
     return findings
 
