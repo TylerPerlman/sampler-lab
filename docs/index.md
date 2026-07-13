@@ -75,6 +75,6 @@ mkdocs build --strict
 
 GitHub Actions validates formatting, linting, strict typing, compilation, package installation,
 PEP 561 metadata, console entry points, executable documentation examples, unit coverage, isolated
-statistical tests, documentation, publication hygiene, and release builds. A scheduled weekly run
-checks the current supported dependency set for numerical drift. GitHub default setup provides
-CodeQL scanning when the repository is eligible, and Dependabot monitors dependencies.
+statistical tests, documentation, and release builds. A scheduled weekly run checks the current
+supported dependency set for numerical drift. GitHub default setup provides CodeQL scanning when
+the repository is eligible, and Dependabot monitors dependencies.
