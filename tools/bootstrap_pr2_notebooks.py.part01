@@ -1,0 +1,180 @@
+        empirical_variances = {name: values.var(axis=0) for name, values in count_samples.items()}
+        multinomial_variance = multinomial_conditional_variances(weights, target_population)
+        minimal_variance = minimal_conditional_variances(weights, target_population)
+
+        for name in schemes:
+            max_mean_error = np.max(np.abs(empirical_means[name] - expected_counts))
+            print(
+                f"{name:>11}: max mean error={max_mean_error:.3f}, "
+                f"mean population={population_samples[name].mean():.3f}, "
+                f"population sd={population_samples[name].std():.3f}"
+            )
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        parent = np.arange(weights.size)
+        ax.plot(parent, multinomial_variance, "o--", label="multinomial theory")
+        ax.plot(parent, minimal_variance, "o--", label="minimum marginal variance")
+        for name, variances in empirical_variances.items():
+            ax.plot(parent, variances, "o-", label=f"{name} empirical")
+        ax.set_xlabel("parent index")
+        ax.set_ylabel(r"conditional variance of $N_i$")
+        ax.set_title("Resampling schemes agree in mean, not in variance")
+        ax.set_xticks(parent)
+        ax.legend(ncol=2)
+        finish_figure(fig)
+        '''),
+        code('''
+        dominant_parent = int(np.argmax(weights))
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        bins = np.arange(28, 54) - 0.5
+        for name, values in count_samples.items():
+            ax.hist(
+                values[:, dominant_parent],
+                bins=bins,
+                density=True,
+                histtype="step",
+                linewidth=1.8,
+                label=name,
+            )
+        ax.axvline(expected_counts[dominant_parent], linestyle="--", label="conditional mean")
+        ax.set_xlabel("offspring assigned to the heaviest parent")
+        ax.set_ylabel("empirical probability")
+        ax.set_title("The same unbiased mean can hide very different offspring noise")
+        ax.legend()
+        finish_figure(fig)
+
+        assert all(
+            np.max(np.abs(mean - expected_counts)) < (0.55 if QUICK_MODE else 0.25)
+            for mean in empirical_means.values()
+        )
+        assert np.mean(empirical_variances["multinomial"]) > 3.0 * np.mean(minimal_variance)
+        '''),
+        md(r'''
+        ## 3. Sequential importance sampling grows self-avoiding walks
+
+        A square-lattice self-avoiding walk grows one vertex at a time. If a partial path has $m_t$
+        available neighbors, the Rosenbluth proposal selects one uniformly and contributes
+        incremental weight $m_t$. The product of these factors corrects the biased growth proposal;
+        averaging the final weights estimates the exact number of walks.
+
+        We compare three strategies:
+
+        - **SIS:** never resample;
+        - **resample every step:** systematic resampling after every weighting stage;
+        - **ESS-triggered:** systematic resampling only when pre-resampling ESS falls below $0.75N$.
+
+        The result keeps both `weighted_clouds` and post-resampling `clouds`, so the weight collapse
+        that triggered a resampling event remains observable.
+        '''),
+        code('''
+        walk_steps = 8 if QUICK_MODE else 10
+        n_particles = 1200 if QUICK_MODE else 7000
+        exact_walk_count = count_self_avoiding_walks(walk_steps)
+        walk_rngs = spawn_rngs(SEED + 20, 3)
+        walk_results = {
+            "SIS": sample_self_avoiding_walks(
+                walk_rngs[0], n_steps=walk_steps, n_particles=n_particles
+            ),
+            "systematic every step": sample_self_avoiding_walks(
+                walk_rngs[1],
+                n_steps=walk_steps,
+                n_particles=n_particles,
+                resampling="systematic",
+                resample_every_step=True,
+            ),
+            "ESS-triggered systematic": sample_self_avoiding_walks(
+                walk_rngs[2],
+                n_steps=walk_steps,
+                n_particles=n_particles,
+                resampling="systematic",
+                resample_ess_fraction=0.75,
+            ),
+        }
+
+        for name, result in walk_results.items():
+            estimate = result.normalizing_constant_estimate
+            relative_error = abs(estimate - exact_walk_count) / exact_walk_count
+            print(
+                f"{name:>25}: estimate={estimate:10.2f}, exact={exact_walk_count}, "
+                f"relative error={relative_error:.3%}, "
+                f"resampling stages={np.count_nonzero(result.resampled)}"
+            )
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        stages = np.arange(1, walk_steps + 1)
+        for name, result in walk_results.items():
+            population = np.array(
+                [weighted.n_particles for weighted in result.weighted_clouds], dtype=np.float64
+            )
+            ess_fraction = result.ess_history / population
+            ax.plot(stages, ess_fraction, "o-", label=name)
+            triggered = np.flatnonzero(result.resampled)
+            if triggered.size:
+                ax.scatter(stages[triggered], ess_fraction[triggered], marker="x", s=70)
+        ax.axhline(0.75, linestyle="--", label="ESS trigger")
+        ax.set_xlabel("growth step")
+        ax.set_ylabel("pre-resampling ESS / population")
+        ax.set_ylim(0.0, 1.05)
+        ax.set_title("Pre-resampling ESS exposes degeneracy that uniform weights would hide")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        generations = np.arange(walk_steps + 1)
+        for name, result in walk_results.items():
+            ancestor_counts = result.ancestry.unique_ancestor_counts()
+            ax.plot(generations, ancestor_counts / ancestor_counts[-1], "o-", label=name)
+        ax.set_xlabel("generation")
+        ax.set_ylabel("distinct ancestors of the final population / final population")
+        ax.set_title("Repeated resampling exchanges weight degeneracy for genealogical collapse")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        code('''
+        display_result = walk_results["ESS-triggered systematic"]
+        positive = np.flatnonzero(display_result.final_weighted_cloud.weights > 0.0)
+        chosen = positive[: min(24, positive.size)]
+        fig, ax = plt.subplots(figsize=(6.2, 6.2))
+        for index in chosen:
+            path = display_result.final_weighted_cloud.particles[index]
+            ax.plot(path[:, 0], path[:, 1], "o-", alpha=0.45, markersize=2.5)
+        ax.set_aspect("equal")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_title("A small view of the final self-avoiding-walk population")
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 4. Parameter study: particle count controls estimator noise, not genealogy
+
+        Increasing $N$ reduces Monte Carlo noise, but aggressive resampling can still leave many
+        final particles descended from a small set of initial particles. We repeat SIS and
+        ESS-triggered systematic resampling over a compact population grid. The plot shows repeated
+        relative errors rather than a single flattering run.
+        '''),
+        code('''
+        population_grid = np.array([250, 600, 1400] if QUICK_MODE else [400, 1000, 2500, 6000])
+        repeats = 4 if QUICK_MODE else 10
+        study = {"SIS": [], "ESS-triggered": []}
+        study_rngs = iter(spawn_rngs(SEED + 30, 2 * repeats * population_grid.size))
+
+        for population in population_grid:
+            for _ in range(repeats):
+                sis = sample_self_avoiding_walks(
+                    next(study_rngs), n_steps=walk_steps, n_particles=int(population)
+                )
+                ess = sample_self_avoiding_walks(
+                    next(study_rngs),
+                    n_steps=walk_steps,
+                    n_particles=int(population),
+                    resampling="systematic",
+                    resample_ess_fraction=0.75,
+                )
+                study["SIS"].append(
+                    (population, abs(sis.normalizing_constant_estimate - exact_walk_count) / exact_walk_count)
+                )
+                study["ESS-triggered"].append(
+                    (population, abs(ess.normalizing_constant_estimate - exact_walk_count) / exact_walk_count)
