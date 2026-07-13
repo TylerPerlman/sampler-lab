@@ -1,0 +1,180 @@
+        assert covariance_error < (0.35 if QUICK_MODE else 0.18)
+        assert max(total_variation_errors) < (0.16 if QUICK_MODE else 0.07)
+        assert FIGURE_COUNT >= 5
+        print(f"completed MCMC and Ising notebook with {FIGURE_COUNT} figures")
+        '''),
+    ]
+
+
+def annealing_notebook() -> list[nbformat.NotebookNode]:
+    return [
+        md(r'''
+        # Annealed paths and free energy: weighting whole trajectories
+
+        Annealed importance sampling (AIS) inserts intermediate distributions between an easy
+        reference law and a difficult target. The product of incremental density ratios estimates a
+        normalizing-constant ratio. Resampling turns the method into annealed sequential Monte Carlo,
+        trading weight concentration for dependence and genealogical collapse.
+
+        This notebook uses the public `sampler_lab.annealing`, `sampler_lab.particles`, and
+        `sampler_lab.models` namespaces.
+
+        **Output semantics:** weighted path estimates; approximate final particle populations;
+        unbiased ratio estimates under the AIS/SMC construction. IID Jarzynski uncertainty formulas
+        apply only when no resampling occurred.
+
+        Related pages: [annealed paths and free energies](../methods/annealed_paths.md),
+        [particle methods](03_particle_methods.ipynb), and [public API](../api.md).
+        '''),
+        code(common_setup('''
+        from sampler_lab import spawn_rngs
+        from sampler_lab.annealing import (
+            AnnealingSchedule,
+            GeometricAnnealingPath,
+            IdentityPopulationTransition,
+            annealed_importance_sampling,
+            jarzynski_estimate,
+            reweight_cloud,
+        )
+        from sampler_lab.models import (
+            IsingGibbsPopulationTransition,
+            IsingModel,
+            exact_ising_distribution,
+        )
+        from sampler_lab.particles import ParticleCloud, SystematicResampler
+        ''')),
+        md(r'''
+        ## 1. Path and schedule
+
+        A geometric path between unnormalized densities $\gamma_0$ and $\gamma_1$ is
+
+        $$
+        \log\gamma_\beta(x)=(1-\beta)\log\gamma_0(x)+\beta\log\gamma_1(x),
+        \qquad 0\le\beta\le1.
+        $$
+
+        The schedule chooses $0=\beta_0<\cdots<\beta_K=1$. At stage $k$, AIS adds
+
+        $$
+        \Delta\ell_k=\log\gamma_{\beta_k}(X_{k-1})
+        -\log\gamma_{\beta_{k-1}}(X_{k-1}),
+        $$
+
+        then applies a transition invariant for the new intermediate law.
+
+        We anneal a $2\times2$ Ising model from infinite temperature ($\beta=0$) to a target inverse
+        temperature. Exact enumeration supplies the partition-function ratio and magnetization law.
+        '''),
+        code('''
+        lattice_size = 2
+        target_beta = 0.85
+        initial_model = IsingModel(lattice_size, 0.0)
+        target_model = IsingModel(lattice_size, target_beta)
+        path = GeometricAnnealingPath(initial_model, target_model)
+        schedule = AnnealingSchedule.linear(8)
+        exact_target = exact_ising_distribution(target_model)
+        exact_log_ratio = exact_target.log_partition - target_model.n_sites * np.log(2.0)
+
+        probe = np.ones((3, lattice_size, lattice_size))
+        print("schedule:", np.round(schedule.values, 3))
+        print("log density at beta=0:", path.log_unnormalized(probe, 0.0))
+        print("log density at beta=1:", path.log_unnormalized(probe, 1.0))
+        print("exact log Z ratio:", round(float(exact_log_ratio), 6))
+        '''),
+        md(r'''
+        The intermediate Ising laws visibly move mass toward strongly magnetized configurations. The
+        next plot shows exact absolute-magnetization distributions along the path. A schedule that
+        crosses this change too abruptly will create highly variable incremental weights.
+        '''),
+        code('''
+        beta_grid = np.linspace(0.0, target_beta, 6)
+        support = np.array([0.0, 0.5, 1.0])
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        for beta in beta_grid:
+            exact = exact_ising_distribution(IsingModel(lattice_size, float(beta)))
+            absolute = np.abs(exact.magnetizations) / target_model.n_sites
+            probabilities = np.array(
+                [np.sum(exact.probabilities[np.isclose(absolute, value)]) for value in support]
+            )
+            ax.plot(support, probabilities, "o-", label=fr"$\beta={beta:.2f}$")
+        ax.set_xlabel("absolute magnetization per site")
+        ax.set_ylabel("exact probability")
+        ax.set_title("The annealing path progressively favors aligned spin states")
+        ax.legend(ncol=2, fontsize=8)
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 2. Minimal AIS and annealed SMC calls
+
+        We use one deterministic Gibbs sweep per stage as the population transition. Ordinary AIS
+        keeps complete independent trajectories and accumulates their log weights. The SMC variant
+        triggers systematic resampling when pre-resampling ESS drops below $0.7N$.
+        '''),
+        code('''
+        n_particles = 900 if QUICK_MODE else 5000
+        run_rngs = spawn_rngs(SEED + 300, 2)
+
+        def initial_particles(rng, count):
+            return np.asarray(
+                2 * rng.integers(0, 2, size=(count, lattice_size, lattice_size)) - 1,
+                dtype=np.float64,
+            )
+
+        transition = IsingGibbsPopulationTransition(
+            lattice_size, target_beta, n_sweeps=1
+        )
+        ais = annealed_importance_sampling(
+            initial_particles(run_rngs[0], n_particles),
+            path,
+            schedule,
+            transition,
+            run_rngs[0],
+        )
+        smc = annealed_importance_sampling(
+            initial_particles(run_rngs[1], n_particles),
+            path,
+            schedule,
+            transition,
+            run_rngs[1],
+            resampler=SystematicResampler(),
+            resample_ess_fraction=0.70,
+        )
+
+        for name, result in (("AIS", ais), ("ESS-resampled SMC", smc)):
+            absolute_magnetization = result.final_cloud.expectation(
+                lambda particles: np.abs(np.sum(particles, axis=(1, 2))) / target_model.n_sites
+            )
+            print(
+                f"{name:>18}: log ratio={result.log_normalizing_constant_ratio:.6f}, "
+                f"error={result.log_normalizing_constant_ratio - exact_log_ratio:+.6f}, "
+                f"E|m|={absolute_magnetization:.5f}, "
+                f"resampling stages={np.count_nonzero(result.resampled)}"
+            )
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        for name, result in (("AIS", ais), ("ESS-resampled SMC", smc)):
+            population = np.array(
+                [cloud.n_particles for cloud in result.weighted_clouds], dtype=np.float64
+            )
+            ess_fraction = result.ess_history / population
+            ax.plot(result.schedule.values[1:], ess_fraction, "o-", label=name)
+            triggered = np.flatnonzero(result.resampled)
+            if triggered.size:
+                ax.scatter(
+                    result.schedule.values[1:][triggered],
+                    ess_fraction[triggered],
+                    marker="x",
+                    s=75,
+                )
+        ax.axhline(0.70, linestyle="--", label="resampling threshold")
+        ax.set_xlabel(r"path parameter $\beta$")
+        ax.set_ylabel("pre-resampling ESS / population")
+        ax.set_ylim(0.0, 1.05)
+        ax.set_title("ESS must be inspected before resampling resets weights")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 3. Work distributions and the Jarzynski sign convention
+
