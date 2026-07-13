@@ -1,0 +1,180 @@
+                )
+
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        for name, values in study.items():
+            data = np.asarray(values, dtype=np.float64)
+            for population in population_grid:
+                errors = data[data[:, 0] == population, 1]
+                x = population * np.exp(np.linspace(-0.025, 0.025, errors.size))
+                ax.scatter(x, errors, alpha=0.55, label=name if population == population_grid[0] else None)
+            medians = [np.median(data[data[:, 0] == population, 1]) for population in population_grid]
+            ax.plot(population_grid, medians, "o-")
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("particle count")
+        ax.set_ylabel("absolute relative error in walk count")
+        ax.set_title("Repeated estimates reveal variance that one run cannot")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## When to use particle methods
+
+        Particle methods are useful when a target is naturally revealed through a sequence of
+        distributions or partial constructions. They provide normalizing-constant estimates and can
+        carry multimodal populations, but they require explicit monitoring of weight ESS, resampling
+        decisions, population size, and ancestry. Resampling solves a local weight problem; it does
+        not create new information.
+
+        Further experiments:
+
+        - reorder particles before systematic resampling and measure the change in joint offspring
+          behavior;
+        - compare multinomial and systematic genealogies at equal normalizing-constant error;
+        - increase walk length until dead paths and weight concentration dominate.
+        '''),
+        code('''
+        best_error = min(
+            abs(result.normalizing_constant_estimate - exact_walk_count) / exact_walk_count
+            for result in walk_results.values()
+        )
+        assert best_error < (0.30 if QUICK_MODE else 0.12)
+        assert FIGURE_COUNT >= 6
+        print(f"completed particle notebook with {FIGURE_COUNT} figures")
+        '''),
+    ]
+
+
+def markov_notebook() -> list[nbformat.NotebookNode]:
+    return [
+        md(r'''
+        # Finite-state Markov theory: exact operators before simulation
+
+        A small transition matrix is a laboratory in which invariance, reversibility, periodicity,
+        spectra, Poisson equations, autocorrelation, and finite-sample Monte Carlo error can all be
+        computed essentially exactly. Simulation is then a validation layer rather than the source of
+        the theory.
+
+        This notebook uses the public `sampler_lab.markov` and `sampler_lab.models` namespaces.
+
+        **Output semantics:** exact finite-state operator calculations and exact-invariant simulated
+        trajectories. Exactness of the invariant law does not imply rapid convergence from an
+        arbitrary initial state.
+
+        Related pages: [finite-state Markov theory](../methods/markov_theory.md),
+        [public API](../api.md), and [diagnostic conventions](00_orientation_and_diagnostics.ipynb).
+        '''),
+        code(common_setup('''
+        from sampler_lab import spawn_rngs
+        from sampler_lab.markov import (
+            asymptotic_variance,
+            autocorrelations,
+            finite_sample_mean_variance,
+            integrated_autocorrelation_time,
+            poisson_martingale_decomposition,
+            pushforward_measure,
+            simulate_chain,
+            solve_poisson_equation,
+        )
+        from sampler_lab.models import deterministic_cycle, ring_cosine_observable, ring_random_walk
+        ''')),
+        md(r'''
+        ## 1. Row-stochastic convention and a minimal chain
+
+        Sampler Lab uses row-stochastic matrices. Observables are columns and probability measures are
+        rows:
+
+        $$
+        (Pf)_i=\sum_jP_{ij}f_j,
+        \qquad
+        (\mu P)_j=\sum_i\mu_iP_{ij}.
+        $$
+
+        The discrete generator is $L=P-I$. The following lazy nearest-neighbor ring walk is
+        irreducible, aperiodic, reversible, and uniform at stationarity.
+        '''),
+        code('''
+        n_states = 12
+        reversible_chain = ring_random_walk(
+            n_states, clockwise=0.25, counterclockwise=0.25, stay=0.50
+        )
+        stationary = reversible_chain.invariant_distribution()
+        observable = ring_cosine_observable(n_states)
+        spectrum = reversible_chain.spectral_summary(stationary)
+
+        print("stationary law:", np.round(stationary, 4))
+        print("period:", reversible_chain.period)
+        print("global-balance residual:", reversible_chain.global_balance_residual(stationary))
+        print("detailed-balance residual:", reversible_chain.detailed_balance_residual(stationary))
+        print("Poincare gap:", spectrum.poincare_gap)
+        print("absolute spectral gap:", spectrum.absolute_spectral_gap)
+
+        assert np.allclose(stationary, np.full(n_states, 1.0 / n_states))
+        assert spectrum.reversible
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(7.2, 5.4))
+        image = ax.imshow(reversible_chain.transition, aspect="auto")
+        fig.colorbar(image, ax=ax, label="transition probability")
+        ax.set_xlabel("next state")
+        ax.set_ylabel("current state")
+        ax.set_title("Transition matrix of the lazy reversible ring walk")
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 2. Invariance is weaker than reversibility, and periodicity is separate
+
+        We compare three chains with the same uniform invariant law:
+
+        1. a lazy reversible walk;
+        2. a lazy directed walk, which preserves the same law without detailed balance;
+        3. a deterministic cycle, which is irreducible but periodic.
+
+        Total-variation distance from a point mass should decay for both lazy chains. It does not
+        decay for the deterministic cycle: its distribution simply rotates forever, even though
+        selected time averages can have zero asymptotic variance.
+        '''),
+        code('''
+        chains = {
+            "lazy reversible": reversible_chain,
+            "lazy directed": ring_random_walk(
+                n_states, clockwise=0.40, counterclockwise=0.10, stay=0.50
+            ),
+            "deterministic cycle": deterministic_cycle(n_states),
+        }
+        initial = np.zeros(n_states)
+        initial[0] = 1.0
+        horizon = 70
+        tv_history = {}
+
+        for name, chain in chains.items():
+            measure = initial.copy()
+            distances = []
+            for _ in range(horizon + 1):
+                distances.append(0.5 * np.sum(np.abs(measure - stationary)))
+                measure = pushforward_measure(measure, chain.transition)
+            tv_history[name] = np.asarray(distances)
+            print(
+                f"{name:>20}: period={chain.period}, "
+                f"reversible={chain.spectral_summary(stationary).reversible}, "
+                f"final TV={distances[-1]:.4f}"
+            )
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        for name, distances in tv_history.items():
+            ax.plot(np.arange(distances.size), distances, label=name)
+        ax.set_yscale("log")
+        ax.set_xlabel("steps from state 0")
+        ax.set_ylabel("total-variation distance to stationarity")
+        ax.set_title("An invariant law need not attract the one-time marginal distribution")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 3. Spectral pictures distinguish contraction from rotation
+
+        Eigenvalues describe how observables propagate, but several gaps answer different questions.
+        The absolute gap detects unit-modulus modes; the reversible Poincare gap orders real
+        nonconstant eigenvalues; the $L^2(\pi)$ singular-value gap applies without reversibility.
+
