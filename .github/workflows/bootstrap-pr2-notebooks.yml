@@ -1,0 +1,68 @@
+name: Bootstrap PR 2 notebooks
+
+on:
+  push:
+    branches:
+      - agent/notebook-sequential-markov
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-pr2-notebooks
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/notebook-sequential-markov
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,notebooks]'
+      - name: Restore notebook generator
+        run: cat tools/bootstrap_pr2_notebooks.py.part* > tools/bootstrap_pr2_notebooks.py
+      - name: Generate PR 2 notebooks and documentation updates
+        run: python tools/bootstrap_pr2_notebooks.py
+      - name: Execute publication notebooks
+        env:
+          SAMPLER_LAB_NOTEBOOK_MODE: publication
+        run: >-
+          pytest --nbmake
+          docs/notebooks/03_particle_methods.ipynb
+          docs/notebooks/04_finite_state_markov_theory.ipynb
+          docs/notebooks/05_metropolis_gibbs_and_ising.ipynb
+          docs/notebooks/06_annealed_paths_and_free_energy.ipynb
+          --nbmake-timeout=600 --overwrite
+      - name: Normalize committed notebook outputs
+        run: >-
+          python tools/normalize_notebooks.py
+          docs/notebooks/03_particle_methods.ipynb
+          docs/notebooks/04_finite_state_markov_theory.ipynb
+          docs/notebooks/05_metropolis_gibbs_and_ising.ipynb
+          docs/notebooks/06_annealed_paths_and_free_energy.ipynb
+      - name: Remove one-shot bootstrap files
+        run: |
+          rm tools/bootstrap_pr2_notebooks.py
+          rm tools/bootstrap_pr2_notebooks.py.part*
+          rm -f tools/bootstrap_pr2_notebooks.py.gz.b64.part*
+          rm .github/workflows/bootstrap-pr2-notebooks.yml
+      - name: Validate generated suite
+        run: |
+          python tools/check_notebook_manifest.py
+          ruff check .
+          ruff format --check .
+          mkdocs build --strict
+      - name: Commit generated notebooks
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add sequential and Markov tutorial notebooks"
+          git push
