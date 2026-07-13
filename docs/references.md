@@ -4,7 +4,7 @@ Sampler Lab is authored by Tyler Perlman with AI-assisted implementation and doc
 Mathematical claims, generated code, and examples are reviewed through deterministic identities,
 strict typing, executable documentation, invariance checks, fixed-seed statistical tests, and
 cross-method reference experiments. The project does not include private source documents, copied
-course assignments, copied prompts, or third-party diagrams.
+instructional materials, copied prompts, or third-party diagrams.
 
 The following references provide public provenance for major algorithm families:
 
