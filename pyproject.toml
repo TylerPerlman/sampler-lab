@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sampler-lab"
-version = "0.12.0"
+dynamic = ["version"]
 description = "Transparent implementations and validation experiments for Monte Carlo sampling"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,7 +12,7 @@ license = "MIT"
 authors = [{ name = "Tyler Perlman" }]
 dependencies = ["numpy>=2.0"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
@@ -21,13 +21,23 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Mathematics",
 ]
 
+[project.urls]
+Homepage = "https://tylerperlman.github.io/sampler-lab/"
+Documentation = "https://tylerperlman.github.io/sampler-lab/"
+Repository = "https://github.com/TylerPerlman/sampler-lab"
+Changelog = "https://github.com/TylerPerlman/sampler-lab/blob/main/CHANGELOG.md"
+Issues = "https://github.com/TylerPerlman/sampler-lab/issues"
+
 [project.optional-dependencies]
 dev = [
   "build>=1.2",
+  "coverage-badge>=1.1",
   "matplotlib>=3.8",
   "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.27",
   "mypy>=1.13",
   "pytest>=8",
+  "pytest-cov>=6",
   "ruff>=0.8",
   "twine>=5",
 ]
@@ -46,8 +56,14 @@ sampler-lab-policy-demo = "sampler_lab.policy_experiments:policy_gradient_main"
 sampler-lab-rare-event-demo = "sampler_lab.rare_event_experiments:rare_event_main"
 sampler-lab-benchmark = "sampler_lab.benchmark_experiments:cross_method_benchmark_main"
 
+[tool.setuptools.dynamic]
+version = { attr = "sampler_lab._version.__version__" }
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+sampler_lab = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"

@@ -4,6 +4,12 @@ Sampler Lab is a from-scratch Monte Carlo methods library and experiment suite. 
 emphasizes transparent algorithms, explicit random-number state, stable log-domain calculations,
 and mathematical validation.
 
+![Rotated-funnel benchmark diagnostic](reference/continuous_benchmark/figures/rotated_anisotropic_funnel_diagnostic.png)
+
+The fixed-seed quick benchmark deliberately exposes funnel-neck error and other method-specific
+failure modes. See the [reference benchmark summary](reference/continuous_benchmark/benchmark_summary.md)
+for the full comparison.
+
 ## What is implemented
 
 - exact transforms and rejection sampling;
@@ -17,8 +23,8 @@ and mathematical validation.
 - variational and Stein methods with explicit exact-versus-approximate labels;
 - a capability-aware cross-method benchmark on Gaussian mixtures and funnel targets.
 
-See the [development roadmap](roadmap.md), [public API policy](public_api.md), and
-[public references](references.md).
+See the [development roadmap](roadmap.md), [generated API reference](api.md),
+[public API policy](public_api.md), and [public references](references.md).
 
 ## Design principles
 
@@ -31,13 +37,17 @@ See the [development roadmap](roadmap.md), [public API policy](public_api.md), a
 
 ## Install
 
+Sampler Lab is not currently published on PyPI. Install the current source directly:
+
 ```bash
-python -m pip install -e .
+python -m pip install "git+https://github.com/TylerPerlman/sampler-lab.git"
 ```
 
-For development:
+For an editable development checkout:
 
 ```bash
+git clone https://github.com/TylerPerlman/sampler-lab.git
+cd sampler-lab
 python -m pip install -e '.[dev]'
 ruff check .
 ruff format --check .
@@ -48,6 +58,9 @@ mkdocs build --strict
 
 ## Start exploring
 
+- [Exact sampling](methods/exact_sampling.md)
+- [Importance sampling](methods/importance_sampling.md)
+- [Particle methods](methods/particle_methods.md)
 - [Finite-state Markov theory](methods/markov_theory.md)
 - [Gibbs and Metropolis methods](methods/gibbs_metropolis.md)
 - [Langevin dynamics](methods/langevin_dynamics.md)
@@ -55,11 +68,13 @@ mkdocs build --strict
 - [Adaptive and policy-gradient sampling](methods/adaptive_policy_sampling.md)
 - [Rare-event methods](methods/rare_events.md)
 - [Cross-method benchmark methodology](benchmarking.md)
-- [Reference benchmark summary](reference/continuous_benchmark/benchmark_summary.md)
+- [Performance expectations](performance.md)
+- [Testing and reproducibility](testing.md)
 
 ## Repository health
 
 GitHub Actions validates formatting, linting, strict typing, compilation, package installation,
-console entry points, unit tests, isolated statistical tests, documentation, publication hygiene,
-and release builds. GitHub default setup provides CodeQL scanning when the repository is eligible.
-Dependabot monitors Python and GitHub Actions dependencies.
+PEP 561 metadata, console entry points, executable documentation examples, unit coverage, isolated
+statistical tests, documentation, publication hygiene, and release builds. A scheduled weekly run
+checks the current supported dependency set for numerical drift. GitHub default setup provides
+CodeQL scanning when the repository is eligible, and Dependabot monitors dependencies.

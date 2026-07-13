@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://tylerperlman.github.io/sampler-lab/
+    about: Check method derivations, API signatures, and project policies before filing.
+  - name: Questions and discussions
+    url: https://github.com/TylerPerlman/sampler-lab/discussions
+    about: Use Discussions for open-ended usage or mathematical questions when enabled.

@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a method, diagnostic, model, benchmark, or infrastructure improvement
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or research need
+      description: What is difficult or impossible with the current repository?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the public interface, mathematical contract, and expected diagnostics.
+    validations:
+      required: true
+  - type: dropdown
+    id: semantics
+    attributes:
+      label: Output semantics
+      options:
+        - Exact direct or rejection samples
+        - Exact invariant Markov kernel
+        - Weighted estimator or particles
+        - Approximate samples or particles
+        - Diagnostic, model, benchmark, or infrastructure
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan
+      description: Which identities, exact references, invariance tests, or failure cases should apply?
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Public references
+      description: Link papers or public documentation that establish the method.
