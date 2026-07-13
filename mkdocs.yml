@@ -24,6 +24,22 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            filters: ["!^_"]
+            heading_level: 2
+            members_order: source
+            show_root_heading: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+
 markdown_extensions:
   - admonition
   - attr_list
@@ -43,9 +59,16 @@ nav:
   - Home: index.md
   - Roadmap: roadmap.md
   - Public references: references.md
-  - Public API: public_api.md
+  - Public API policy: public_api.md
+  - API reference: api.md
   - Benchmarking: benchmarking.md
+  - Performance: performance.md
+  - Testing and reproducibility: testing.md
+  - Releases and installation: releasing.md
   - Methods:
+      - Exact sampling: methods/exact_sampling.md
+      - Importance sampling: methods/importance_sampling.md
+      - Particle methods: methods/particle_methods.md
       - Markov theory: methods/markov_theory.md
       - Gibbs, Metropolis, and Ising: methods/gibbs_metropolis.md
       - Annealed paths: methods/annealed_paths.md
@@ -60,5 +83,8 @@ nav:
   - Reference benchmark:
       - Overview: reference/continuous_benchmark/README.md
       - Summary: reference/continuous_benchmark/benchmark_summary.md
+
+not_in_nav: |
+  build_status.md
 
 strict: true
