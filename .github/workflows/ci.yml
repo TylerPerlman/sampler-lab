@@ -32,16 +32,40 @@ jobs:
         run: cat tools/bootstrap_pr2_notebooks.py.part* > tools/bootstrap_pr2_notebooks.py
       - name: Generate PR 2 notebooks and documentation updates
         run: python tools/bootstrap_pr2_notebooks.py
-      - name: Execute publication notebooks
+      - name: Execute publication notebooks independently
         env:
           SAMPLER_LAB_NOTEBOOK_MODE: publication
-        run: >-
-          pytest --nbmake
-          docs/notebooks/03_particle_methods.ipynb
-          docs/notebooks/04_finite_state_markov_theory.ipynb
-          docs/notebooks/05_metropolis_gibbs_and_ising.ipynb
-          docs/notebooks/06_annealed_paths_and_free_energy.ipynb
-          --nbmake-timeout=600 --overwrite
+        shell: bash
+        run: |
+          mkdir -p notebook-debug
+          status=0
+          for notebook in \
+            docs/notebooks/03_particle_methods.ipynb \
+            docs/notebooks/04_finite_state_markov_theory.ipynb \
+            docs/notebooks/05_metropolis_gibbs_and_ising.ipynb \
+            docs/notebooks/06_annealed_paths_and_free_energy.ipynb
+          do
+            log="notebook-debug/$(basename "$notebook").log"
+            set +e
+            pytest --nbmake "$notebook" --nbmake-timeout=600 --overwrite 2>&1 | tee "$log"
+            code=${PIPESTATUS[0]}
+            set -e
+            if (( code != 0 )); then
+              status=1
+            fi
+          done
+          exit "$status"
+      - name: Upload publication debug outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2-publication-debug
+          path: |
+            docs/notebooks/03_particle_methods.ipynb
+            docs/notebooks/04_finite_state_markov_theory.ipynb
+            docs/notebooks/05_metropolis_gibbs_and_ising.ipynb
+            docs/notebooks/06_annealed_paths_and_free_energy.ipynb
+            notebook-debug/
       - name: Normalize committed notebook outputs
         run: >-
           python tools/normalize_notebooks.py
