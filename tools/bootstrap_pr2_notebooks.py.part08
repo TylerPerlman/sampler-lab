@@ -1,0 +1,180 @@
+        print("AIS E|m|:", round(float(estimated_abs_magnetization), 6))
+
+        assert np.isclose(jarzynski.log_ratio_estimate, ais.log_normalizing_constant_ratio)
+        assert good_error < (0.25 if QUICK_MODE else 0.10)
+        assert abs(estimated_abs_magnetization - exact_abs_magnetization) < (
+            0.12 if QUICK_MODE else 0.05
+        )
+        assert FIGURE_COUNT >= 5
+        print(f"completed annealing notebook with {FIGURE_COUNT} figures")
+        '''),
+    ]
+
+
+def update_manifest() -> None:
+    path = NOTEBOOK_DIR / "manifest.toml"
+    text = path.read_text(encoding="utf-8")
+    replacements = {
+        '''path = "docs/notebooks/03_particle_methods.ipynb"\nfamily = "particle methods"\nstatus = "planned"\nmode = "quick-and-publication"\noutput_semantics = ["weighted", "approximate", "diagnostic"]\ncoverage = ["sampler_lab.particles.*"]\nsupporting_symbols = []''':
+        '''path = "docs/notebooks/03_particle_methods.ipynb"\nfamily = "particle methods"\nstatus = "implemented"\nmode = "quick-and-publication"\noutput_semantics = ["weighted", "approximate", "diagnostic"]\ncoverage = ["sampler_lab.particles.*"]\nsupporting_symbols = [\n  "sampler_lab.models.count_self_avoiding_walks",\n  "sampler_lab.models.sample_self_avoiding_walks",\n]''',
+        '''path = "docs/notebooks/04_finite_state_markov_theory.ipynb"\nfamily = "finite-state Markov theory"\nstatus = "planned"\nmode = "quick-and-publication"\noutput_semantics = ["exact_invariant", "diagnostic"]\ncoverage = ["sampler_lab.markov.*"]\nsupporting_symbols = []''':
+        '''path = "docs/notebooks/04_finite_state_markov_theory.ipynb"\nfamily = "finite-state Markov theory"\nstatus = "implemented"\nmode = "quick-and-publication"\noutput_semantics = ["exact_invariant", "diagnostic"]\ncoverage = ["sampler_lab.markov.*"]\nsupporting_symbols = [\n  "sampler_lab.models.deterministic_cycle",\n  "sampler_lab.models.ring_cosine_observable",\n  "sampler_lab.models.ring_random_walk",\n]''',
+        '''path = "docs/notebooks/05_metropolis_gibbs_and_ising.ipynb"\nfamily = "Metropolis, Gibbs, and Ising"\nstatus = "planned"\nmode = "quick-and-publication"\noutput_semantics = ["exact_invariant", "diagnostic"]\ncoverage = ["sampler_lab.mcmc.*"]\nsupporting_symbols = []''':
+        '''path = "docs/notebooks/05_metropolis_gibbs_and_ising.ipynb"\nfamily = "Metropolis, Gibbs, and Ising"\nstatus = "implemented"\nmode = "quick-and-publication"\noutput_semantics = ["exact_invariant", "diagnostic"]\ncoverage = ["sampler_lab.mcmc.*"]\nsupporting_symbols = [\n  "sampler_lab.OperationCounter",\n  "sampler_lab.diagnostics.empirical_integrated_autocorrelation_time",\n  "sampler_lab.models.GaussianTarget",\n  "sampler_lab.models.IsingModel",\n  "sampler_lab.models.RandomScanIsingMetropolisKernel",\n  "sampler_lab.models.deterministic_sweep_ising_gibbs",\n  "sampler_lab.models.exact_ising_distribution",\n  "sampler_lab.models.random_scan_ising_gibbs",\n]''',
+        '''path = "docs/notebooks/06_annealed_paths_and_free_energy.ipynb"\nfamily = "annealed paths and free energy"\nstatus = "planned"\nmode = "quick-and-publication"\noutput_semantics = ["weighted", "approximate", "diagnostic"]\ncoverage = ["sampler_lab.annealing.*"]\nsupporting_symbols = []''':
+        '''path = "docs/notebooks/06_annealed_paths_and_free_energy.ipynb"\nfamily = "annealed paths and free energy"\nstatus = "implemented"\nmode = "quick-and-publication"\noutput_semantics = ["weighted", "approximate", "diagnostic"]\ncoverage = ["sampler_lab.annealing.*"]\nsupporting_symbols = [\n  "sampler_lab.models.IsingGibbsPopulationTransition",\n  "sampler_lab.models.IsingModel",\n  "sampler_lab.models.exact_ising_distribution",\n  "sampler_lab.particles.ParticleCloud",\n  "sampler_lab.particles.SystematicResampler",\n]''',
+    }
+    for old, new in replacements.items():
+        if old not in text:
+            raise RuntimeError(f"manifest block not found: {old.splitlines()[0]}")
+        text = text.replace(old, new)
+    path.write_text(text, encoding="utf-8")
+
+
+def update_index() -> None:
+    path = NOTEBOOK_DIR / "index.md"
+    path.write_text(
+        textwrap.dedent(
+            '''
+            # Tutorial notebooks
+
+            These executed notebooks are the visual pedagogy layer for Sampler Lab. They use only public
+            package namespaces, fixed named seeds, and method-appropriate diagnostics. The console demos
+            remain the NumPy-only, print-based reproduction layer; notebooks add derivations, plots,
+            parameter studies, and controlled failures.
+
+            ## Suggested sequence
+
+            | Notebook | Use it to learn | Matching console surface |
+            |---|---|---|
+            | [Orientation and diagnostics](00_orientation_and_diagnostics.ipynb) | Distinguish IID, weighted, correlated, and approximate output; interpret RMSE, weight ESS, IAT, and chain ESS | Repository-wide diagnostic conventions |
+            | [Exact and IID sampling](01_exact_and_iid_sampling.ipynb) | Use inversion, Box--Muller, transformations, and rejection sampling; compare direct and rejected unit-disk draws | `sampler-lab-disk-benchmark --seed 2022` |
+            | [Importance sampling](02_importance_sampling.ipynb) | Compare standard and self-normalized estimators, diagnose weights, improve a Gaussian rare-event estimate, and expose product-space collapse | `sampler-lab-importance-demo --seed 2022 --threshold 4` |
+            | [Particle methods](03_particle_methods.ipynb) | Interpret weighted clouds, compare resamplers, run sequential importance sampling, and diagnose ancestry collapse | `sampler-lab-particle-demo --seed 2022` |
+            | [Finite-state Markov theory](04_finite_state_markov_theory.ipynb) | Compute invariant laws, reversibility, spectra, Poisson solutions, exact autocorrelation, and finite-sample error | `sampler-lab-markov-demo --seed 2022` |
+            | [Metropolis, Gibbs, and Ising](05_metropolis_gibbs_and_ising.ipynb) | Tune proposals, retain rejections, compare Gibbs schedules, validate against exact Ising laws, and expose metastability | `sampler-lab-ising-demo --seed 2022` |
+            | [Annealed paths and free energy](06_annealed_paths_and_free_energy.ipynb) | Estimate partition-function ratios, inspect work and ESS, compare AIS with annealed SMC, and study schedule resolution | `sampler-lab-annealing-demo --seed 2022` |
+
+            The remaining notebook families are assigned in [`manifest.toml`](manifest.toml). The manifest
+            is a machine-checked roadmap: every public sampling namespace is either covered by an
+            implemented notebook or assigned to a later notebook.
+
+            ## Reproduce locally
+
+            ```bash
+            python -m pip install -e '.[dev,notebooks]'
+            jupyter lab docs/notebooks
+            ```
+
+            Publication outputs are committed. CI re-executes notebooks with
+            `SAMPLER_LAB_NOTEBOOK_MODE=quick`; quick mode changes sample counts, not the mathematical
+            checks. Use `python tools/normalize_notebooks.py` before committing an updated notebook.
+
+            ## Reading conventions
+
+            Each tutorial labels whether its output is exact IID, exact-invariant Markov, weighted, or
+            approximate. Plots state the expected behavior before displaying results and interpret
+            quantitative checks afterward. A pretty cloud is evidence of successful plotting, not
+            successful sampling.
+            '''
+        ).lstrip(),
+        encoding="utf-8",
+    )
+
+
+def update_mkdocs() -> None:
+    path = ROOT / "mkdocs.yml"
+    text = path.read_text(encoding="utf-8")
+    anchor = "      - Importance sampling: notebooks/02_importance_sampling.ipynb\n"
+    addition = (
+        "      - Particle methods: notebooks/03_particle_methods.ipynb\n"
+        "      - Finite-state Markov theory: notebooks/04_finite_state_markov_theory.ipynb\n"
+        "      - Metropolis, Gibbs, and Ising: notebooks/05_metropolis_gibbs_and_ising.ipynb\n"
+        "      - Annealed paths and free energy: notebooks/06_annealed_paths_and_free_energy.ipynb\n"
+    )
+    if addition not in text:
+        if anchor not in text:
+            raise RuntimeError("MkDocs notebook navigation anchor not found")
+        text = text.replace(anchor, anchor + addition)
+    path.write_text(text, encoding="utf-8")
+
+
+def add_tip(path: Path, title: str, target: str, description: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    marker = f"[${title}$]"  # impossible marker used only for idempotence below
+    del marker
+    if target in text:
+        return
+    lines = text.splitlines()
+    if not lines or not lines[0].startswith("# "):
+        raise RuntimeError(f"unexpected method-page heading: {path}")
+    tip = [
+        lines[0],
+        "",
+        '!!! tip "Visual tutorial"',
+        f"    Work through [{title}]({target}) for {description}.",
+        "",
+        *lines[1:],
+    ]
+    path.write_text("\n".join(tip).rstrip() + "\n", encoding="utf-8")
+
+
+def update_method_links() -> None:
+    add_tip(
+        ROOT / "docs/methods/particle_methods.md",
+        "Particle methods",
+        "../notebooks/03_particle_methods.ipynb",
+        "executed resampling, sequential-weighting, ancestry, and self-avoiding-walk experiments",
+    )
+    add_tip(
+        ROOT / "docs/methods/markov_theory.md",
+        "Finite-state Markov theory",
+        "../notebooks/04_finite_state_markov_theory.ipynb",
+        "exact operator calculations, spectral plots, Poisson equations, and empirical validation",
+    )
+    add_tip(
+        ROOT / "docs/methods/gibbs_metropolis.md",
+        "Metropolis, Gibbs, and Ising",
+        "../notebooks/05_metropolis_gibbs_and_ising.ipynb",
+        "proposal-scale studies, retained rejections, exact Ising checks, and metastability diagnostics",
+    )
+    add_tip(
+        ROOT / "docs/methods/annealed_paths.md",
+        "Annealed paths and free energy",
+        "../notebooks/06_annealed_paths_and_free_energy.ipynb",
+        "AIS, Jarzynski work, annealed SMC, schedule studies, and pre-resampling ESS",
+    )
+
+
+def update_readme() -> None:
+    path = ROOT / "README.md"
+    text = path.read_text(encoding="utf-8")
+    old = (
+        "[orientation and diagnostics](docs/notebooks/00_orientation_and_diagnostics.ipynb), then continue to\n"
+        "[exact and IID sampling](docs/notebooks/01_exact_and_iid_sampling.ipynb) or\n"
+        "[importance sampling](docs/notebooks/02_importance_sampling.ipynb)."
+    )
+    new = (
+        "[orientation and diagnostics](docs/notebooks/00_orientation_and_diagnostics.ipynb), then continue to\n"
+        "[exact and IID sampling](docs/notebooks/01_exact_and_iid_sampling.ipynb),\n"
+        "[importance sampling](docs/notebooks/02_importance_sampling.ipynb), or the sequential series from\n"
+        "[particle methods](docs/notebooks/03_particle_methods.ipynb) through\n"
+        "[Metropolis, Gibbs, and Ising](docs/notebooks/05_metropolis_gibbs_and_ising.ipynb)."
+    )
+    if old not in text:
+        raise RuntimeError("README tutorial paragraph not found")
+    path.write_text(text.replace(old, new), encoding="utf-8")
+
+
+def main() -> None:
+    write_notebook("03_particle_methods.ipynb", particle_notebook())
+    write_notebook("04_finite_state_markov_theory.ipynb", markov_notebook())
+    write_notebook("05_metropolis_gibbs_and_ising.ipynb", mcmc_notebook())
+    write_notebook("06_annealed_paths_and_free_energy.ipynb", annealing_notebook())
+    update_manifest()
+    update_index()
+    update_mkdocs()
+    update_method_links()
+    update_readme()
+    print("Generated PR 2 notebook sources and documentation links")
+
