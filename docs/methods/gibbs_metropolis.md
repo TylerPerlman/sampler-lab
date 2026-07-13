@@ -1,5 +1,9 @@
 # Gibbs and Metropolis--Hastings
 
+!!! tip "Visual tutorial"
+    Work through [Metropolis, Gibbs, and Ising](../notebooks/05_metropolis_gibbs_and_ising.ipynb)
+    for proposal tuning, jump-chain failure, exact small-lattice checks, and metastability.
+
 Phase 5 adds the first general simulation-oriented MCMC layer. The finite-state
 operator package remains the place for exact transition matrices and Poisson
 calculations; `sampler_lab.mcmc` is the place for actually advancing array-valued

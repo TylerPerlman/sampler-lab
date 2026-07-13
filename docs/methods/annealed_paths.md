@@ -1,5 +1,9 @@
 # Annealed Paths, Jarzynski Weighting, and Free Energies
 
+!!! tip "Visual tutorial"
+    Work through [Annealed paths and free energy](../notebooks/06_annealed_paths_and_free_energy.ipynb)
+    for AIS, annealed SMC, Jarzynski work tails, schedule studies, and path reweighting.
+
 ## Distribution path
 
 Let \(\gamma_\beta(x)\) be an unnormalized density for
