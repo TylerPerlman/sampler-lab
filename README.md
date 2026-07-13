@@ -2,12 +2,18 @@
 
 [![CI](https://github.com/TylerPerlman/sampler-lab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TylerPerlman/sampler-lab/actions/workflows/ci.yml)
 [![Documentation](https://github.com/TylerPerlman/sampler-lab/actions/workflows/pages.yml/badge.svg?branch=main)](https://tylerperlman.github.io/sampler-lab/)
+[![Coverage](https://tylerperlman.github.io/sampler-lab/assets/coverage.svg)](https://github.com/TylerPerlman/sampler-lab/actions/workflows/ci.yml)
 [![Python 3.11–3.13](https://img.shields.io/badge/python-3.11--3.13-blue.svg)](https://www.python.org/)
 [![mypy: strict](https://img.shields.io/badge/mypy-strict-blue.svg)](https://mypy-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Sampler Lab is a from-scratch Monte Carlo methods library and experiment suite for transparent,
 reproducible sampling research.
+
+[![Rotated-funnel benchmark diagnostic](docs/reference/continuous_benchmark/figures/rotated_anisotropic_funnel_diagnostic.png)](docs/reference/continuous_benchmark/benchmark_summary.md)
+
+*The fixed-seed quick benchmark deliberately makes funnel-neck error visible rather than hiding
+failure modes behind a single leaderboard score.*
 
 The project favors explicit mathematical structure over convenience wrappers:
 
@@ -49,7 +55,17 @@ Sampler Lab currently includes:
 
 ## Install
 
+Sampler Lab is not currently published on PyPI. Install the current source directly:
+
 ```bash
+python -m pip install "git+https://github.com/TylerPerlman/sampler-lab.git"
+```
+
+For an editable checkout:
+
+```bash
+git clone https://github.com/TylerPerlman/sampler-lab.git
+cd sampler-lab
 python -m pip install -e .
 ```
 
@@ -86,7 +102,8 @@ print(result.ancestry.unique_ancestor_counts())
 ```
 
 The result retains the weighted cloud before every resampling step, so uniform post-resampling
-weights cannot erase the evidence that triggered resampling.
+weights cannot erase the evidence that triggered resampling. CI extracts and executes this exact
+README block so the example cannot quietly rot.
 
 ## Reproducible demonstrations
 
@@ -113,10 +130,17 @@ output types.
 ## Documentation
 
 - [Published documentation](https://tylerperlman.github.io/sampler-lab/)
+- [Generated API reference](https://tylerperlman.github.io/sampler-lab/api/)
 - [Development roadmap](docs/roadmap.md)
 - [Public references and provenance](docs/references.md)
 - [Public API and extension policy](docs/public_api.md)
 - [Benchmark semantics](docs/benchmarking.md)
+- [Performance expectations](docs/performance.md)
+- [Testing and reproducibility policy](docs/testing.md)
+- [Release and installation policy](docs/releasing.md)
+- [Exact sampling](docs/methods/exact_sampling.md)
+- [Importance sampling](docs/methods/importance_sampling.md)
+- [Particle methods](docs/methods/particle_methods.md)
 - [Finite-state Markov theory](docs/methods/markov_theory.md)
 - [Gibbs, Metropolis, and Ising](docs/methods/gibbs_metropolis.md)
 - [Annealed paths](docs/methods/annealed_paths.md)
@@ -129,7 +153,7 @@ output types.
 
 ## Design status
 
-Version 0.12.0 is a feature-complete beta. Package families, result semantics, command-line entry
+Sampler Lab is a feature-complete beta. Package families, result semantics, command-line entry
 points, and benchmark outputs are documented and regression-tested. Names may still change before
 1.0, but RNG behavior, rejection states, weight normalization, exactness labels, and output
 semantics are compatibility-sensitive.
