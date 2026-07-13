@@ -14,7 +14,7 @@ machine-checked manifest.
 | Notebook | Use it to learn | Matching console surface |
 |---|---|---|
 | [Orientation and diagnostics](00_orientation_and_diagnostics.ipynb) | Distinguish IID, weighted, correlated, and approximate output; interpret RMSE, weight ESS, IAT, and chain ESS | Repository-wide diagnostic conventions |
-| [Exact and IID sampling](01_exact_and_iid_sampling.ipynb) | Use inversion, Box--Muller, transformations, and rejection sampling; compare direct and rejected unit-disk draws | `sampler-lab-disk-benchmark --seed 2022` |
+| [Exact and IID sampling](01_exact_and_iid_sampling.ipynb) | Use inversion, Box–Muller, transformations, and rejection sampling; compare direct and rejected unit-disk draws | `sampler-lab-disk-benchmark --seed 2022` |
 | [Importance sampling](02_importance_sampling.ipynb) | Compare standard and self-normalized estimators, diagnose weights, improve a Gaussian rare-event estimate, and expose product-space collapse | `sampler-lab-importance-demo --seed 2022 --threshold 4` |
 | [Particle methods](03_particle_methods.ipynb) | Inspect weighted clouds, compare resampling variance, grow self-avoiding walks, and measure genealogical collapse | `sampler-lab-particle-demo --steps 10 --particles 20000` |
 | [Finite-state Markov theory](04_finite_state_markov_theory.ipynb) | Compute invariance, reversibility, spectra, autocorrelation, Poisson solutions, and exact finite-sample variance | `sampler-lab-markov-demo --states 12 --samples 240 --replicates 2000` |
