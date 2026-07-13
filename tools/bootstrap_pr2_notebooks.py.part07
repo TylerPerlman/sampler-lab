@@ -1,0 +1,180 @@
+        Sampler Lab defines reduced work by $W=-\sum_k\Delta\ell_k$, so
+
+        $$
+        \mathbb E[e^{-W}]=Z_1/Z_0,
+        \qquad \Delta F=-\log(Z_1/Z_0).
+        $$
+
+        The exponential average is controlled by the low-work tail. A broad work distribution can
+        make most trajectories visually irrelevant to the estimate. For unresampled AIS, the package
+        reports the elementary IID delta-method uncertainty; after resampling that formula is disabled
+        because trajectories are coupled and duplicated.
+        '''),
+        code('''
+        work = ais.final_reduced_work
+        jarzynski = ais.iid_jarzynski_estimate()
+        direct = jarzynski_estimate(work)
+        print("ratio estimate:", direct.ratio_estimate)
+        print("log ratio estimate:", direct.log_ratio_estimate)
+        print("free-energy estimate:", direct.delta_free_energy)
+        print("delta-method standard error:", direct.free_energy_standard_error)
+
+        try:
+            smc.iid_jarzynski_estimate()
+        except ValueError as error:
+            print("resampled uncertainty guard:", error)
+        else:
+            raise AssertionError("resampled SMC must not expose IID Jarzynski uncertainty")
+
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        ax.hist(work, bins=55, density=True, histtype="stepfilled", alpha=0.45)
+        ax.axvline(np.median(work), linestyle="--", label="median work")
+        weighted_mean_work = np.average(work, weights=np.exp(-work - np.max(-work)))
+        ax.axvline(weighted_mean_work, linestyle=":", label=r"$e^{-W}$-weighted mean")
+        ax.set_xlabel("reduced work W")
+        ax.set_ylabel("density")
+        ax.set_title("Jarzynski estimates are governed by an exponential tail")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 4. Schedule resolution and movement study
+
+        More intermediate distributions reduce each density-ratio jump, but they also cost more
+        transition work. We repeat estimates across schedule lengths for two transition choices:
+
+        - an identity transition, which is invariant but performs no rejuvenation;
+        - one Gibbs sweep per stage.
+
+        This is a controlled failure: an invariant identity kernel is mathematically legal and
+        practically poor. Increasing the number of path points helps, but it cannot manufacture
+        movement between modes.
+        '''),
+        code('''
+        step_grid = np.array([1, 2, 4, 8] if QUICK_MODE else [1, 2, 4, 8, 16, 32])
+        replicates = 4 if QUICK_MODE else 14
+        study_particles = 450 if QUICK_MODE else 1800
+        study_rngs = iter(spawn_rngs(SEED + 310, 2 * replicates * step_grid.size))
+        errors = {"identity transition": [], "one Gibbs sweep": []}
+        minimum_ess = {"identity transition": [], "one Gibbs sweep": []}
+
+        for steps in step_grid:
+            study_schedule = AnnealingSchedule.linear(int(steps))
+            configurations = {
+                "identity transition": IdentityPopulationTransition(),
+                "one Gibbs sweep": IsingGibbsPopulationTransition(
+                    lattice_size, target_beta, n_sweeps=1
+                ),
+            }
+            for _ in range(replicates):
+                for name, move in configurations.items():
+                    rng = next(study_rngs)
+                    result = annealed_importance_sampling(
+                        initial_particles(rng, study_particles),
+                        path,
+                        study_schedule,
+                        move,
+                        rng,
+                    )
+                    errors[name].append(
+                        (steps, result.log_normalizing_constant_ratio - exact_log_ratio)
+                    )
+                    minimum_ess[name].append(
+                        (steps, np.min(result.ess_history / study_particles))
+                    )
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.8, 5.0))
+        positions = np.arange(step_grid.size)
+        width = 0.34
+        for offset, (name, values) in zip((-width / 2, width / 2), errors.items(), strict=True):
+            data = np.asarray(values, dtype=np.float64)
+            groups = [data[data[:, 0] == steps, 1] for steps in step_grid]
+            ax.boxplot(
+                groups,
+                positions=positions + offset,
+                widths=width * 0.85,
+                patch_artist=False,
+                manage_ticks=False,
+            )
+            medians = [np.median(group) for group in groups]
+            ax.plot(positions + offset, medians, "o-", label=name)
+        ax.axhline(0.0, linewidth=0.9)
+        ax.set_xticks(positions, step_grid)
+        ax.set_xlabel("number of annealing stages")
+        ax.set_ylabel("log normalizing-ratio error")
+        ax.set_title("Repeated runs expose schedule bias and exponential-weight variance")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        for name, values in minimum_ess.items():
+            data = np.asarray(values, dtype=np.float64)
+            medians = [np.median(data[data[:, 0] == steps, 1]) for steps in step_grid]
+            lower = [np.quantile(data[data[:, 0] == steps, 1], 0.2) for steps in step_grid]
+            upper = [np.quantile(data[data[:, 0] == steps, 1], 0.8) for steps in step_grid]
+            ax.plot(step_grid, medians, "o-", label=name)
+            ax.fill_between(step_grid, lower, upper, alpha=0.18)
+        ax.set_xscale("log", base=2)
+        ax.set_xlabel("number of annealing stages")
+        ax.set_ylabel("minimum ESS / population")
+        ax.set_ylim(0.0, 1.05)
+        ax.set_title("Finer paths reduce the worst incremental weight collapse")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 5. Intermediate-state reweighting
+
+        A cloud approximating $\pi_{\beta_a}$ can be reweighted toward $\pi_{\beta_b}$ without
+        mutation. This is useful for diagnostics and short bridges, but the resulting ESS quantifies
+        how far the cloud can be pushed before a new transition or resampling step is needed.
+        '''),
+        code('''
+        source_beta = 0.35
+        target_beta_for_reweighting = 0.75
+        source_model = IsingModel(lattice_size, source_beta * target_beta)
+        source_exact = exact_ising_distribution(source_model)
+        source_rng = np.random.default_rng(SEED + 320)
+        source_indices = source_rng.choice(
+            source_exact.probabilities.size,
+            size=1200 if QUICK_MODE else 6000,
+            p=source_exact.probabilities,
+        )
+        source_particles = source_exact.states[source_indices]
+        source_cloud = ParticleCloud.uniform(source_particles)
+        reweighted = reweight_cloud(
+            source_cloud,
+            path,
+            source_beta,
+            target_beta_for_reweighting,
+        )
+        print("source cloud ESS:", source_cloud.effective_sample_size)
+        print("reweighted cloud ESS:", round(reweighted.effective_sample_size, 2))
+        print("reweighted ESS fraction:", round(reweighted.effective_sample_size / reweighted.n_particles, 4))
+        '''),
+        md(r'''
+        ## When to use annealed paths
+
+        AIS and annealed SMC are useful for partition functions, free-energy differences, and targets
+        that can be connected to an easy reference law. Their main tuning objects are the path,
+        schedule, invariant transitions, particle count, and resampling rule. Monitor incremental
+        weights, pre-resampling ESS, work tails, and ancestry together.
+
+        Further experiments:
+
+        - replace the linear schedule by a power schedule concentrated near the difficult end;
+        - compare fixed-stage and ESS-triggered resampling at equal spin-update cost;
+        - increase target inverse temperature until the identity-transition failure becomes severe.
+        '''),
+        code('''
+        good_error = abs(ais.log_normalizing_constant_ratio - exact_log_ratio)
+        exact_abs_magnetization = exact_target.expectation(
+            np.abs(exact_target.magnetizations) / target_model.n_sites
+        )
+        estimated_abs_magnetization = ais.final_cloud.expectation(
+            lambda particles: np.abs(np.sum(particles, axis=(1, 2))) / target_model.n_sites
+        )
+        print("AIS absolute log-ratio error:", round(float(good_error), 6))
+        print("exact E|m|:", round(float(exact_abs_magnetization), 6))
