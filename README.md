@@ -73,7 +73,6 @@ For development:
 
 ```bash
 python -m pip install -e '.[dev]'
-python tools/publication_check.py --root .
 ruff check .
 ruff format --check .
 mypy src/sampler_lab
