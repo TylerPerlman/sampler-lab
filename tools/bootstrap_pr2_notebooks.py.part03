@@ -1,0 +1,180 @@
+        The deterministic cycle places every eigenvalue on the unit circle. The directed lazy walk
+        contracts while rotating, producing complex eigenvalues inside the disk.
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(6.4, 6.4))
+        angle = np.linspace(0.0, 2.0 * np.pi, 400)
+        ax.plot(np.cos(angle), np.sin(angle), linestyle="--", linewidth=1.0, label="unit circle")
+        for name, chain in chains.items():
+            eigenvalues = np.linalg.eigvals(chain.transition)
+            ax.scatter(eigenvalues.real, eigenvalues.imag, s=45, label=name)
+        ax.axhline(0.0, linewidth=0.8)
+        ax.axvline(0.0, linewidth=0.8)
+        ax.set_aspect("equal")
+        ax.set_xlabel("real part")
+        ax.set_ylabel("imaginary part")
+        ax.set_title("Transition-matrix spectra")
+        ax.legend(loc="lower left")
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 4. Exact autocorrelation and empirical autocorrelation
+
+        Under stationarity,
+
+        $$
+        \rho_k = \frac{\langle g,P^kg\rangle_\pi}{\langle g,g\rangle_\pi},
+        \qquad g=f-\pi[f].
+        $$
+
+        We can compare this exact sequence to an empirical trajectory. For the directed chain the
+        cosine observable oscillates as it decorrelates. A short empirical estimate follows the
+        pattern imperfectly, which is precisely why exact small-state references are valuable.
+        '''),
+        code('''
+        max_lag = 35
+        simulated_steps = 8000 if QUICK_MODE else 60000
+        chain_rngs = spawn_rngs(SEED + 100, len(chains))
+        exact_acf = {}
+        empirical_acf = {}
+
+        def empirical_autocorrelation(values, max_lag):
+            centered = np.asarray(values, dtype=np.float64) - np.mean(values)
+            denominator = np.dot(centered, centered)
+            return np.array(
+                [
+                    1.0
+                    if lag == 0
+                    else np.dot(centered[:-lag], centered[lag:]) / denominator
+                    for lag in range(max_lag + 1)
+                ]
+            )
+
+        for (name, chain), rng in zip(chains.items(), chain_rngs, strict=True):
+            exact_acf[name] = autocorrelations(
+                chain, observable, max_lag, probabilities=stationary
+            )
+            trajectory = simulate_chain(
+                chain, rng, n_steps=simulated_steps, initial_distribution=stationary
+            )
+            empirical_acf[name] = empirical_autocorrelation(
+                trajectory.observable_values(observable), max_lag
+            )
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.8, 5.0))
+        for name in chains:
+            ax.plot(np.arange(max_lag + 1), exact_acf[name], label=f"{name}: exact")
+            ax.scatter(
+                np.arange(max_lag + 1),
+                empirical_acf[name],
+                s=14,
+                alpha=0.55,
+                label=f"{name}: empirical",
+            )
+        ax.axhline(0.0, linewidth=0.8)
+        ax.set_xlabel("lag")
+        ax.set_ylabel("autocorrelation")
+        ax.set_title("Exact operator autocorrelation versus one stationary trajectory")
+        ax.legend(ncol=2, fontsize=8)
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 5. Poisson equations predict Monte Carlo error
+
+        For centered $g=f-\pi[f]$, Sampler Lab solves
+
+        $$
+        (P-I)u=g, \qquad \pi[u]=0.
+        $$
+
+        The solution yields the exact asymptotic variance and an algebraic martingale decomposition.
+        It also gives a finite-$N$ variance formula from exact autocovariances. We compare that
+        formula with repeated stationary simulations over a grid of sample sizes.
+        '''),
+        code('''
+        poisson = solve_poisson_equation(reversible_chain, observable, probabilities=stationary)
+        iat = integrated_autocorrelation_time(
+            reversible_chain, observable, probabilities=stationary
+        )
+        asymptotic = asymptotic_variance(
+            reversible_chain, observable, probabilities=stationary
+        )
+        test_path = simulate_chain(
+            reversible_chain,
+            np.random.default_rng(SEED + 101),
+            n_steps=100,
+            initial_distribution=stationary,
+        )
+        decomposition = poisson_martingale_decomposition(
+            reversible_chain, observable, test_path.states, probabilities=stationary
+        )
+
+        print("Poisson residual:", poisson.residual_norm)
+        print("centering residual:", poisson.centering_residual)
+        print("exact IAT:", round(iat, 5))
+        print("asymptotic variance:", round(asymptotic, 5))
+        print("martingale identity residual:", decomposition.residual)
+
+        assert poisson.residual_norm < 1e-10
+        assert abs(decomposition.residual) < 1e-9
+        '''),
+        code('''
+        sample_sizes = np.array([20, 50, 120] if QUICK_MODE else [20, 50, 120, 300, 800])
+        replicates = 500 if QUICK_MODE else 3500
+        replicate_rngs = spawn_rngs(SEED + 110, sample_sizes.size)
+        exact_standard_errors = []
+        empirical_standard_errors = []
+
+        for sample_size, rng in zip(sample_sizes, replicate_rngs, strict=True):
+            exact_variance = finite_sample_mean_variance(
+                reversible_chain,
+                observable,
+                int(sample_size),
+                probabilities=stationary,
+            )
+            exact_standard_errors.append(np.sqrt(exact_variance))
+
+            states = rng.choice(n_states, size=replicates, p=stationary)
+            totals = observable[states].copy()
+            cumulative = np.cumsum(reversible_chain.transition, axis=1)
+            for _ in range(1, int(sample_size)):
+                draws = rng.random(replicates)
+                states = np.sum(draws[:, None] > cumulative[states], axis=1)
+                states = np.minimum(states, n_states - 1)
+                totals += observable[states]
+            empirical_standard_errors.append(np.std(totals / sample_size, ddof=1))
+
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        ax.loglog(sample_sizes, exact_standard_errors, "o-", label="exact finite-sample SE")
+        ax.loglog(sample_sizes, empirical_standard_errors, "s--", label="replicated empirical SE")
+        ax.loglog(
+            sample_sizes,
+            np.sqrt(asymptotic / sample_sizes),
+            linestyle=":",
+            label=r"asymptotic $\\sqrt{\\sigma_f^2/N}$",
+        )
+        ax.set_xlabel("observations per stationary run")
+        ax.set_ylabel("standard deviation of the sample mean")
+        ax.set_title("Poisson theory predicts repeated-run Monte Carlo error")
+        ax.legend()
+        finish_figure(fig)
+
+        relative_gap = np.max(
+            np.abs(np.asarray(empirical_standard_errors) - np.asarray(exact_standard_errors))
+            / np.asarray(exact_standard_errors)
+        )
+        print("largest empirical/exact SE relative gap:", round(float(relative_gap), 4))
+        '''),
+        md(r'''
+        ## Controlled failure: a periodic chain can average well without mixing
+
+        The deterministic cycle never approaches stationarity in total variation from a point mass,
+        but the cosine observable sums to zero over a complete cycle. Its Poisson asymptotic variance
+        is therefore zero. This is not a contradiction: distributional convergence and the variance
+        of one chosen time average are different properties.
+
+        This example is a warning against reducing Markov-chain quality to a single spectral number,
+        a single observable, or a single attractive trajectory.
+        '''),
+        code('''
