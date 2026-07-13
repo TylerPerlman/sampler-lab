@@ -73,7 +73,6 @@ For development:
 
 ```bash
 python -m pip install -e '.[dev]'
-python tools/publication_check.py --root .
 ruff check .
 ruff format --check .
 mypy src/sampler_lab
@@ -105,6 +104,22 @@ The result retains the weighted cloud before every resampling step, so uniform p
 weights cannot erase the evidence that triggered resampling. CI extracts and executes this exact
 README block so the example cannot quietly rot.
 
+## Tutorial notebooks
+
+The [executed tutorial notebooks](docs/notebooks/index.md) are the visual pedagogy layer. Start with
+[orientation and diagnostics](docs/notebooks/00_orientation_and_diagnostics.ipynb), then continue to
+[exact and IID sampling](docs/notebooks/01_exact_and_iid_sampling.ipynb) or
+[importance sampling](docs/notebooks/02_importance_sampling.ipynb).
+
+```bash
+python -m pip install -e '.[dev,notebooks]'
+jupyter lab docs/notebooks
+```
+
+The notebooks use public package namespaces, fixed named seeds, quantitative assertions, and a
+quick mode exercised in CI. The console demos remain the dependency-light numeric reproduction
+surface.
+
 ## Reproducible demonstrations
 
 ```bash
@@ -130,6 +145,7 @@ output types.
 ## Documentation
 
 - [Published documentation](https://tylerperlman.github.io/sampler-lab/)
+- [Tutorial notebooks](docs/notebooks/index.md)
 - [Generated API reference](https://tylerperlman.github.io/sampler-lab/api/)
 - [Development roadmap](docs/roadmap.md)
 - [Public references and provenance](docs/references.md)

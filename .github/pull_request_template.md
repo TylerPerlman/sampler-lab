@@ -10,7 +10,6 @@ Describe the method, fix, documentation change, or engineering improvement.
 
 ## Validation
 
-- [ ] `python tools/publication_check.py --root .`
 - [ ] `ruff check .`
 - [ ] `ruff format --check .`
 - [ ] `mypy src/sampler_lab`

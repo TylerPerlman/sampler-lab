@@ -41,6 +41,14 @@ dev = [
   "ruff>=0.8",
   "twine>=5",
 ]
+notebooks = [
+  "ipykernel",
+  "jupyterlab",
+  "matplotlib>=3.8",
+  "mkdocs-jupyter",
+  "nbformat",
+  "nbmake",
+]
 
 [project.scripts]
 sampler-lab-disk-benchmark = "sampler_lab.experiments:disk_benchmark_main"
@@ -78,6 +86,9 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/notebooks/*.ipynb" = ["E402"]
 
 [tool.mypy]
 python_version = "3.11"

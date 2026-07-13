@@ -1,5 +1,9 @@
 # Importance Sampling
 
+!!! tip "Visual tutorial"
+    Work through [Importance sampling](../notebooks/02_importance_sampling.ipynb) for executed
+    Gaussian-tail and product-collapse experiments using the public API and CLI seed conventions.
+
 ## Three estimators that should not be conflated
 
 Let samples \(X_i\) be IID from a normalized proposal density \(q\), and let

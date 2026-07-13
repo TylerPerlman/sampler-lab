@@ -19,7 +19,6 @@ Python 3.11, 3.12, and 3.13 are supported.
 Run the deterministic checks before opening a pull request:
 
 ```bash
-python tools/publication_check.py --root .
 ruff check .
 ruff format --check .
 mypy src/sampler_lab

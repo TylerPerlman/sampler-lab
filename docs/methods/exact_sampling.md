@@ -1,5 +1,9 @@
 # Exact Sampling
 
+!!! tip "Visual tutorial"
+    Work through [Exact and IID sampling](../notebooks/01_exact_and_iid_sampling.ipynb) for
+    executed examples, quantitative checks, and the matching unit-disk CLI configuration.
+
 ## Inverse transform
 
 For a CDF `F`, sample `U ~ Uniform(0, 1)` and return the generalized inverse

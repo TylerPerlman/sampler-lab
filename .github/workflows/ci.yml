@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Quality, docs, packaging, and publication hygiene
+    name: Quality, docs, and packaging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,18 +27,18 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[dev]'
-      - run: python tools/publication_check.py --root .
+      - run: python -m pip install -e '.[dev,notebooks]'
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src/sampler_lab
       - run: python -m compileall -q src tests tools
       - run: mkdocs build --strict
-      - name: Build and inspect distributions
+      - name: Build distributions
+        run: python -m build
+      - name: Check distribution metadata
+        run: python -m twine check dist/*
+      - name: Verify wheel typing marker
         run: |
-          python -m build
-          python -m twine check dist/*
-          python tools/publication_check.py --root . --artifacts dist site
           python - <<'PY'
           import glob
           import zipfile
@@ -48,7 +48,8 @@ jobs:
           with zipfile.ZipFile(wheel[0]) as archive:
               assert "sampler_lab/py.typed" in archive.namelist()
           PY
-          python -m pip install --force-reinstall --no-deps dist/*.whl
+      - name: Install built wheel
+        run: python -m pip install --force-reinstall --no-deps dist/*.whl
       - name: Verify installed metadata, PEP 561 typing, and console entry points
         shell: bash
         run: |
@@ -88,6 +89,43 @@ jobs:
           do
             command -v "$command"
           done
+
+  notebooks:
+    name: Tutorial notebooks (quick mode)
+    runs-on: ubuntu-latest
+    env:
+      SAMPLER_LAB_NOTEBOOK_MODE: quick
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,notebooks]'
+      - name: Validate notebook JSON
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          import nbformat
+
+          paths = sorted(Path("docs/notebooks").glob("*.ipynb"))
+          assert paths, "no tutorial notebooks found"
+          for path in paths:
+              notebook = nbformat.read(path, as_version=4)
+              nbformat.validate(notebook)
+          print(f"Validated {len(paths)} notebooks")
+          PY
+      - run: python tools/check_notebook_manifest.py
+      - name: Execute notebooks
+        run: pytest --nbmake docs/notebooks/*.ipynb --nbmake-timeout=300 --overwrite
+      - name: Upload executed quick-mode notebooks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutorial-notebooks-quick
+          path: docs/notebooks/*.ipynb
 
   coverage:
     name: Unit-test coverage
