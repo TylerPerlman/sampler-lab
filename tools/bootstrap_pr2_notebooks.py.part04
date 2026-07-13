@@ -88,7 +88,7 @@ def mcmc_notebook() -> list[nbformat.NotebookNode]:
         print("acceptance rate:", round(float(trajectory.acceptance_rate), 4))
         print("rejections retained:", trajectory.n_rejections)
         print("empirical mean:", np.round(retained.mean(axis=0), 4))
-        print("empirical covariance:\n", np.round(np.cov(retained.T), 3))
+        print("empirical covariance:\\n", np.round(np.cov(retained.T), 3))
         print("log-density evaluations:", counter.log_density_evaluations)
 
         assert trajectory.n_rejections > 0
