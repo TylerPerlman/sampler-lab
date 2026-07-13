@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build-and-release:
-    name: Build and publish release
+    name: Build and publish GitHub release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -34,11 +34,20 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
-          PACKAGE_VERSION=$(python - <<'PY2'
-          import tomllib
-          with open("pyproject.toml", "rb") as handle:
-              print(tomllib.load(handle)["project"]["version"])
-          PY2
+          PACKAGE_VERSION=$(python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          module = ast.parse(Path("src/sampler_lab/_version.py").read_text(encoding="utf-8"))
+          assignments = {
+              target.id: ast.literal_eval(node.value)
+              for node in module.body
+              if isinstance(node, ast.Assign)
+              for target in node.targets
+              if isinstance(target, ast.Name)
+          }
+          print(assignments["__version__"])
+          PY
           )
           test "$RELEASE_TAG" = "v$PACKAGE_VERSION"
       - run: python -m build
@@ -55,5 +64,8 @@ jobs:
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" dist/* --clobber
           else
-            gh release create "$RELEASE_TAG" dist/*               --verify-tag               --generate-notes               --title "Sampler Lab $RELEASE_TAG"
+            gh release create "$RELEASE_TAG" dist/* \
+              --verify-tag \
+              --generate-notes \
+              --title "Sampler Lab $RELEASE_TAG"
           fi
