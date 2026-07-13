@@ -39,30 +39,31 @@ def write_notebook(name: str, cells: list[nbformat.NotebookNode]) -> None:
 
 
 def common_setup(imports: str, *, seed: int = 2022) -> str:
-    return f'''
-    import importlib.metadata
-    import os
+    import_block = textwrap.dedent(imports).strip()
+    return f"""
+import importlib.metadata
+import os
 
-    import matplotlib.pyplot as plt
-    import numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
 
-    {textwrap.dedent(imports).strip()}
+{import_block}
 
-    QUICK_MODE = os.environ.get("SAMPLER_LAB_NOTEBOOK_MODE") == "quick"
-    SEED = {seed}
-    FIGURE_COUNT = 0
+QUICK_MODE = os.environ.get("SAMPLER_LAB_NOTEBOOK_MODE") == "quick"
+SEED = {seed}
+FIGURE_COUNT = 0
 
-    def finish_figure(fig):
-        global FIGURE_COUNT
-        fig.tight_layout()
-        plt.show()
-        plt.close(fig)
-        FIGURE_COUNT += 1
+def finish_figure(fig):
+    global FIGURE_COUNT
+    fig.tight_layout()
+    plt.show()
+    plt.close(fig)
+    FIGURE_COUNT += 1
 
-    print("sampler-lab", importlib.metadata.version("sampler-lab"))
-    print("execution mode:", "quick" if QUICK_MODE else "publication")
-    print("master seed:", SEED)
-    '''
+print("sampler-lab", importlib.metadata.version("sampler-lab"))
+print("execution mode:", "quick" if QUICK_MODE else "publication")
+print("master seed:", SEED)
+"""
 
 
 def particle_notebook() -> list[nbformat.NotebookNode]:
@@ -99,7 +100,6 @@ def particle_notebook() -> list[nbformat.NotebookNode]:
             minimal_conditional_variances,
             multinomial_conditional_variances,
             offspring_counts,
-            resampling_diagnostics,
         )
         ''')),
         md(r'''
