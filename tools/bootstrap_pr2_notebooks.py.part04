@@ -1,0 +1,180 @@
+        periodic = chains["deterministic cycle"]
+        periodic_iat = integrated_autocorrelation_time(
+            periodic, observable, probabilities=stationary
+        )
+        periodic_asymptotic = asymptotic_variance(
+            periodic, observable, probabilities=stationary
+        )
+        print("deterministic-cycle IAT:", periodic_iat)
+        print("deterministic-cycle asymptotic variance:", periodic_asymptotic)
+        print("deterministic-cycle TV distance after 70 steps:", tv_history["deterministic cycle"][-1])
+
+        assert periodic_asymptotic < 1e-10
+        assert tv_history["deterministic cycle"][-1] > 0.8
+        assert relative_gap < (0.22 if QUICK_MODE else 0.10)
+        assert FIGURE_COUNT >= 5
+        print(f"completed finite-state Markov notebook with {FIGURE_COUNT} figures")
+        '''),
+    ]
+
+
+def mcmc_notebook() -> list[nbformat.NotebookNode]:
+    return [
+        md(r'''
+        # Metropolis, Gibbs, and Ising: exact kernels can still mix badly
+
+        Metropolis--Hastings corrects a proposal with an accept/reject step. Gibbs sampling replaces a
+        block by an exact conditional draw. Both can preserve a target exactly, but their finite-run
+        usefulness depends on proposal scale, scan order, geometry, and metastability.
+
+        This notebook uses the public `sampler_lab.mcmc`, `sampler_lab.models`, and
+        `sampler_lab.diagnostics` namespaces.
+
+        **Output semantics:** exact-invariant Markov kernels after all tuning is fixed. The retained
+        trajectory includes rejected repeats; deleting them changes the law.
+
+        Related pages: [Gibbs and Metropolis--Hastings](../methods/gibbs_metropolis.md),
+        [finite-state Markov theory](04_finite_state_markov_theory.ipynb), and
+        [public API](../api.md).
+        '''),
+        code(common_setup('''
+        from sampler_lab import OperationCounter, spawn_rngs
+        from sampler_lab.diagnostics import empirical_integrated_autocorrelation_time
+        from sampler_lab.mcmc import (
+            GaussianRandomWalkProposal,
+            MetropolisHastingsKernel,
+            run_chain,
+        )
+        from sampler_lab.models import (
+            GaussianTarget,
+            IsingModel,
+            RandomScanIsingMetropolisKernel,
+            deterministic_sweep_ising_gibbs,
+            exact_ising_distribution,
+            random_scan_ising_gibbs,
+        )
+        ''')),
+        md(r'''
+        ## 1. Minimal Metropolis--Hastings example
+
+        For proposal density $q(y\mid x)$, Metropolis--Hastings accepts with
+
+        $$
+        \alpha(x,y)=1\wedge
+        \frac{\pi(y)q(x\mid y)}{\pi(x)q(y\mid x)}.
+        $$
+
+        The package evaluates all four log-density terms even for symmetric proposals. This keeps the
+        correction visible and prevents a state-dependent proposal from accidentally being treated as
+        symmetric.
+        '''),
+        code('''
+        target_covariance = np.array([[1.0, 0.92], [0.92, 1.0]])
+        target = GaussianTarget([0.0, 0.0], target_covariance)
+        counter = OperationCounter()
+        kernel = MetropolisHastingsKernel(
+            target,
+            GaussianRandomWalkProposal(0.55),
+            counter=counter,
+        )
+        trajectory = run_chain(
+            kernel,
+            np.array([3.0, -3.0]),
+            np.random.default_rng(SEED + 200),
+            n_steps=3500 if QUICK_MODE else 18000,
+        )
+        retained = trajectory.samples(discard=700 if QUICK_MODE else 3000)
+
+        print("acceptance rate:", round(float(trajectory.acceptance_rate), 4))
+        print("rejections retained:", trajectory.n_rejections)
+        print("empirical mean:", np.round(retained.mean(axis=0), 4))
+        print("empirical covariance:\n", np.round(np.cov(retained.T), 3))
+        print("log-density evaluations:", counter.log_density_evaluations)
+
+        assert trajectory.n_rejections > 0
+        assert trajectory.states.shape[0] == trajectory.n_steps + 1
+        '''),
+        code('''
+        grid = np.linspace(-3.5, 3.5, 180)
+        xx, yy = np.meshgrid(grid, grid)
+        points = np.stack([xx, yy], axis=-1)
+        precision = np.linalg.inv(target_covariance)
+        quadratic = np.einsum("...i,ij,...j->...", points, precision, points)
+
+        fig, ax = plt.subplots(figsize=(6.5, 6.0))
+        ax.contour(xx, yy, np.exp(-0.5 * quadratic), levels=8)
+        shown = retained[: min(1600, retained.shape[0])]
+        ax.plot(shown[:, 0], shown[:, 1], linewidth=0.45, alpha=0.55)
+        ax.scatter(shown[::35, 0], shown[::35, 1], s=9)
+        ax.set_aspect("equal")
+        ax.set_xlabel("x[0]")
+        ax.set_ylabel("x[1]")
+        ax.set_title("Random-walk MH follows the correlated target, with repeated states")
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## 2. Proposal-scale study
+
+        A tiny random walk accepts almost everything but moves slowly. An enormous random walk
+        proposes far into the tails and rejects almost everything. A useful scale balances movement
+        and acceptance; acceptance rate alone is not the objective.
+
+        We compare scale, acceptance, integrated autocorrelation time, and expected squared jump
+        distance (ESJD) using independent fixed-seed trajectories.
+        '''),
+        code('''
+        scales = np.array([0.08, 0.20, 0.45, 0.90, 1.8, 3.5])
+        scale_rngs = spawn_rngs(SEED + 210, scales.size)
+        scale_steps = 4500 if QUICK_MODE else 22000
+        burn_in = 800 if QUICK_MODE else 3500
+        scale_rows = []
+        scale_trajectories = {}
+
+        for scale, rng in zip(scales, scale_rngs, strict=True):
+            proposal = GaussianRandomWalkProposal(float(scale))
+            chain = run_chain(
+                MetropolisHastingsKernel(target, proposal),
+                np.zeros(2),
+                rng,
+                n_steps=scale_steps,
+            )
+            samples = chain.samples(discard=burn_in)
+            x0 = samples[:, 0]
+            iat = empirical_integrated_autocorrelation_time(x0)
+            jumps = np.diff(chain.states[burn_in:], axis=0)
+            esjd = float(np.mean(np.sum(jumps * jumps, axis=1)))
+            scale_rows.append((scale, chain.acceptance_rate, iat, esjd))
+            scale_trajectories[float(scale)] = chain
+            print(
+                f"scale={scale:4.2f} acceptance={chain.acceptance_rate:.3f} "
+                f"IAT={iat:7.2f} ESJD={esjd:.4f}"
+            )
+
+        scale_rows = np.asarray(scale_rows, dtype=np.float64)
+        '''),
+        code('''
+        fig, ax = plt.subplots(figsize=(8.5, 4.8))
+        ax.plot(scale_rows[:, 0], scale_rows[:, 1], "o-", label="acceptance rate")
+        ax.plot(scale_rows[:, 0], scale_rows[:, 3] / np.max(scale_rows[:, 3]), "s-", label="ESJD / max")
+        ax.plot(
+            scale_rows[:, 0],
+            np.min(scale_rows[:, 2]) / scale_rows[:, 2],
+            "^-",
+            label="best IAT / IAT",
+        )
+        ax.set_xscale("log")
+        ax.set_xlabel("proposal standard deviation")
+        ax.set_ylabel("normalized diagnostic")
+        ax.set_ylim(0.0, 1.05)
+        ax.set_title("Acceptance alone rewards proposals that barely move")
+        ax.legend()
+        finish_figure(fig)
+        '''),
+        md(r'''
+        ## Controlled failure: deleting rejections creates the jump chain
+
+        A rejection is a real transition $X_{k+1}=X_k$. If repeated states are deleted, the remaining
+        jump chain is generally not distributed according to the original target. We compare the
+        variance of the retained MH chain with the variance of accepted destinations only for a
+        deliberately oversized proposal.
+        '''),
