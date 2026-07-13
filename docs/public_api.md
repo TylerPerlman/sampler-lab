@@ -4,9 +4,10 @@ Sampler Lab is a teaching and research codebase whose public surface is the pack
 validated dataclasses, protocols, and command-line entry points documented here. Internal helper
 functions beginning with `_` are not stable.
 
-Version `0.12.0` is the first feature-complete beta. Backward-incompatible public changes before
-`1.0` must be documented in `CHANGELOG.md`, accompanied by migration notes, and tested at the
-package-export level.
+Sampler Lab is a feature-complete beta. Backward-incompatible public changes before `1.0` must be
+documented in `CHANGELOG.md`, accompanied by migration notes, and tested at the package-export
+level. The installed package ships a `py.typed` marker, so downstream type checkers can consume the
+annotations under PEP 561.
 
 ## Core conventions
 
@@ -41,7 +42,8 @@ package-export level.
 | `sampler_lab.models` | transparent reference targets and model-specific laboratories |
 
 Package `__init__.py` files define the intended import surface. Deep imports remain available for
-study, but callers should prefer package exports when one exists.
+study, but callers should prefer package exports when one exists. The
+[generated API reference](api.md) renders those exports from the live docstrings and signatures.
 
 ## Protocols
 
