@@ -35,6 +35,44 @@ jobs:
           python -m py_compile /tmp/bootstrap_pr4_notebooks.py
       - name: Generate notebooks and documentation updates
         run: python /tmp/bootstrap_pr4_notebooks.py
+      - name: Apply notebook lint corrections
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          replacements = {
+              'axes[0].set_title("Robbins–Monro rate")':
+                  'axes[0].set_title("Robbins-Monro rate")',
+              'print("frozen-policy JSON round trip:", np.allclose(restored.parameters, frozen.parameters.reshape(-1)))':
+                  'round_trip = np.allclose(restored.parameters, frozen.parameters.reshape(-1))\nprint("frozen-policy JSON round trip:", round_trip)',
+              'f"{row.method:28s} exact_after_freeze={str(row.exact_after_freeze):5s} "':
+                  'f"{row.method:28s} exact_after_freeze={row.exact_after_freeze!s:5s} "',
+              'axis.set_title("Maintained method–target compatibility matrix")':
+                  'axis.set_title("Maintained method-target compatibility matrix")',
+              'print(" ", method, "×", target, "->", "; ".join(reasons))':
+                  'print(" ", method, "x", target, "->", "; ".join(reasons))',
+              'print("excluded:", exclusion.method, "×", exclusion.target, exclusion.reasons)':
+                  'print("excluded:", exclusion.method, "x", exclusion.target, exclusion.reasons)',
+          }
+          for notebook_name in (
+              "10_adaptive_and_learned_sampling.ipynb",
+              "12_cross_method_benchmarking.ipynb",
+          ):
+              path = Path("docs/notebooks") / notebook_name
+              notebook = json.loads(path.read_text(encoding="utf-8"))
+              for cell in notebook["cells"]:
+                  if cell.get("cell_type") != "code":
+                      continue
+                  source = "".join(cell.get("source", []))
+                  for old, new in replacements.items():
+                      source = source.replace(old, new)
+                  cell["source"] = source.splitlines(keepends=True)
+              path.write_text(
+                  json.dumps(notebook, ensure_ascii=False, indent=1) + "\n",
+                  encoding="utf-8",
+              )
+          PY
       - name: Execute publication notebooks independently
         env:
           SAMPLER_LAB_NOTEBOOK_MODE: publication
@@ -78,6 +116,7 @@ jobs:
           rm -f tools/bootstrap_pr4_notebooks.py
           rm -f tools/bootstrap_pr4_notebooks.py.gz.b64.part*
           rm -f .github/workflows/bootstrap-pr4-notebooks.yml
+          rm -f .github/workflows/debug-pr4-ruff.yml
       - name: Validate notebook manifest
         run: python tools/check_notebook_manifest.py
       - name: Check Ruff lint
