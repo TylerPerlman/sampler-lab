@@ -1,7 +1,7 @@
 # Tutorial notebooks
 
 These executed notebooks are the visual pedagogy layer for Sampler Lab. They use only public package
-namespaces, fixed named seeds, and method-appropriate diagnostics. The console demos remain the
+namespaces, fixed named seeds, and method-appropriate diagnostics. Console demos remain the
 NumPy-only, print-based reproduction layer; notebooks add derivations, plots, parameter studies, and
 controlled failures.
 
