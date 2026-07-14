@@ -1,5 +1,9 @@
 # Conditioning, Affine Geometry, and Ensemble Methods
 
+!!! tip "Visual tutorial"
+    Work through [Geometry, conditioning, and ensembles](../notebooks/09_geometry_conditioning_and_ensembles.ipynb)
+    for whitening, Gaussian conditioning, Hessian repair, stochastic Newton, and ensemble diagnostics.
+
 This module keeps three related ideas separate:
 
 1. changing coordinates to expose or remove conditioning;

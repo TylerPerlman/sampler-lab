@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/runner/work/sampler-lab/sampler-lab
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.14.2, nbmake-1.5.5
+collected 1 item
+
+docs/notebooks/07_langevin_sampling.ipynb .                              [100%]
+
+============================== 1 passed in 20.80s ==============================

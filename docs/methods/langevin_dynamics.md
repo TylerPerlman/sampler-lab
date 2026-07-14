@@ -1,5 +1,9 @@
 # Generator Limits and Langevin Dynamics
 
+!!! tip "Visual tutorial"
+    Work through [Langevin sampling](../notebooks/07_langevin_sampling.ipynb) for executed
+    diffusion-limit, ULA stability, preconditioning, MALA, and controlled-instability studies.
+
 Phase 7 adds a common numerical layer for diffusion limits, Euler discretizations,
 and gradient-based Markov chains.
 

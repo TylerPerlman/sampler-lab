@@ -1,5 +1,9 @@
 # Hamiltonian and Underdamped Dynamics
 
+!!! tip "Visual tutorial"
+    Work through [Hamiltonian and underdamped dynamics](../notebooks/08_hamiltonian_and_underdamped_dynamics.ipynb)
+    for phase portraits, leapfrog diagnostics, mass conditioning, HMC, BAOAB, and XY experiments.
+
 ## Phase-space convention
 
 For a differentiable target density \(\pi(q)\) and a symmetric positive-definite

@@ -108,8 +108,8 @@ README block so the example cannot quietly rot.
 
 The [executed tutorial notebooks](docs/notebooks/index.md) are the visual pedagogy layer. Start with
 [orientation and diagnostics](docs/notebooks/00_orientation_and_diagnostics.ipynb), then continue
-through exact and IID sampling, importance sampling, particles, finite-state Markov theory,
-Metropolis/Gibbs/Ising, and annealed paths.
+through exact and IID sampling, importance sampling, particles, Markov methods, annealed paths,
+Langevin and Hamiltonian dynamics, and geometry-aware ensemble sampling.
 
 ```bash
 python -m pip install -e '.[dev,notebooks]'
