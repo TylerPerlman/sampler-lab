@@ -125,7 +125,7 @@ supporting_symbols = [
 [[notebooks]]
 path = "docs/notebooks/07_langevin_sampling.ipynb"
 family = "Langevin sampling"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["exact_invariant", "approximate", "diagnostic"]
 coverage = [
@@ -151,12 +151,17 @@ coverage = [
   "sampler_lab.dynamics.overdamped_langevin_drift",
   "sampler_lab.dynamics.solve_discrete_lyapunov",
 ]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.spawn_rngs",
+  "sampler_lab.diagnostics.empirical_integrated_autocorrelation_time",
+  "sampler_lab.mcmc.run_chain",
+  "sampler_lab.models.GaussianTarget",
+]
 
 [[notebooks]]
 path = "docs/notebooks/08_hamiltonian_and_underdamped_dynamics.ipynb"
 family = "Hamiltonian and underdamped dynamics"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["exact_invariant", "approximate", "diagnostic"]
 coverage = [
@@ -203,16 +208,22 @@ coverage = [
   "sampler_lab.dynamics.underdamped_generator_value",
   "sampler_lab.dynamics.volume_preservation_error",
 ]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.models.GaussianTarget",
+]
 
 [[notebooks]]
 path = "docs/notebooks/09_geometry_conditioning_and_ensembles.ipynb"
 family = "geometry, conditioning, and ensembles"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["exact_invariant", "approximate", "diagnostic"]
 coverage = ["sampler_lab.geometry.*", "sampler_lab.ensemble.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.spawn_rngs",
+  "sampler_lab.models.GaussianTarget",
+  "sampler_lab.models.RosenbrockTarget",
+]
 
 [[notebooks]]
 path = "docs/notebooks/10_adaptive_and_learned_sampling.ipynb"

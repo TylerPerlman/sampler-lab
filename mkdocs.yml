@@ -71,6 +71,9 @@ nav:
       - Finite-state Markov theory: notebooks/04_finite_state_markov_theory.ipynb
       - Metropolis, Gibbs, and Ising: notebooks/05_metropolis_gibbs_and_ising.ipynb
       - Annealed paths and free energy: notebooks/06_annealed_paths_and_free_energy.ipynb
+      - Langevin sampling: notebooks/07_langevin_sampling.ipynb
+      - Hamiltonian and underdamped dynamics: notebooks/08_hamiltonian_and_underdamped_dynamics.ipynb
+      - Geometry, conditioning, and ensembles: notebooks/09_geometry_conditioning_and_ensembles.ipynb
   - API reference: api.md
   - Benchmarking: benchmarking.md
   - Performance: performance.md
