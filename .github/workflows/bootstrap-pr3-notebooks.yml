@@ -51,6 +51,50 @@ jobs:
               if old not in text:
                   raise ValueError(f"missing generator source fragment: {old!r}")
               text = text.replace(old, new)
+
+          old_iat = (
+              "            mala_samples = mala.states[minimal_burn + 1 :]\n"
+              "            print(\"MALA acceptance:\", round(float(mala.acceptance_rate), 4))\n"
+          )
+          new_iat = (
+              "            mala_samples = mala.states[minimal_burn + 1 :]\n"
+              "            ula_iat = empirical_integrated_autocorrelation_time(ula_samples[:, 0])\n"
+              "            mala_iat = empirical_integrated_autocorrelation_time(mala_samples[:, 0])\n"
+              "            print(\"empirical x1 IAT (ULA, MALA):\", round(ula_iat, 2), round(mala_iat, 2))\n"
+              "            print(\"MALA acceptance:\", round(float(mala.acceptance_rate), 4))\n"
+          )
+          if old_iat not in text:
+              raise ValueError("missing Langevin sample-summary block")
+          text = text.replace(old_iat, new_iat, 1)
+
+          old_hamiltonian_import = (
+              "            from sampler_lab import spawn_rngs\n"
+              "            from sampler_lab.dynamics import (\n"
+              "                HamiltonianSystem,\n"
+          )
+          new_hamiltonian_import = (
+              "            from sampler_lab.dynamics import (\n"
+              "                HamiltonianSystem,\n"
+          )
+          if old_hamiltonian_import not in text:
+              raise ValueError("missing Hamiltonian spawn_rngs import")
+          text = text.replace(old_hamiltonian_import, new_hamiltonian_import, 1)
+
+          old_hamiltonian_manifest = (
+              '        "docs/notebooks/08_hamiltonian_and_underdamped_dynamics.ipynb": [\n'
+              '            "sampler_lab.spawn_rngs",\n'
+              '            "sampler_lab.models.GaussianTarget",\n'
+              '        ],\n'
+          )
+          new_hamiltonian_manifest = (
+              '        "docs/notebooks/08_hamiltonian_and_underdamped_dynamics.ipynb": [\n'
+              '            "sampler_lab.models.GaussianTarget",\n'
+              '        ],\n'
+          )
+          if old_hamiltonian_manifest not in text:
+              raise ValueError("missing Hamiltonian manifest block")
+          text = text.replace(old_hamiltonian_manifest, new_hamiltonian_manifest, 1)
+
           prefix, separator, suffix = text.rpartition("assert FIGURE_COUNT >= 6")
           if not separator:
               raise ValueError("missing geometry figure-count assertion")
