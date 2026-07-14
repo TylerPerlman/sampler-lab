@@ -28,7 +28,7 @@ jobs:
       - run: python -m pip install -e '.[dev,notebooks]'
       - name: Restore notebook generator
         run: base64 -d tools/bootstrap_pr3_notebooks.py.gz.b64 | gzip -d > tools/bootstrap_pr3_notebooks.py
-      - name: Patch generated-code newline escapes
+      - name: Patch generated notebook source
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -42,11 +42,19 @@ jobs:
               "MALA covariance:\\n": "MALA covariance:\\\\n",
               "empirical whitened covariance:\\n": "empirical whitened covariance:\\\\n",
               "conditional covariance:\\n": "conditional covariance:\\\\n",
+              'axes[0].plot(selected[:, 0], selected[:, 3], "o-", label=label)':
+                  'axes[0].plot(selected[:, 0], selected[:, 2], "o-", label=label)',
+              'axes[1].plot(selected[:, 0], selected[:, 4], "o-", label=label)':
+                  'axes[1].plot(selected[:, 0], selected[:, 3], "o-", label=label)',
           }
           for old, new in replacements.items():
               if old not in text:
                   raise ValueError(f"missing generator source fragment: {old!r}")
               text = text.replace(old, new)
+          prefix, separator, suffix = text.rpartition("assert FIGURE_COUNT >= 6")
+          if not separator:
+              raise ValueError("missing geometry figure-count assertion")
+          text = prefix + "assert FIGURE_COUNT >= 5" + suffix
           path.write_text(text, encoding="utf-8")
           PY
           python -m py_compile tools/bootstrap_pr3_notebooks.py
