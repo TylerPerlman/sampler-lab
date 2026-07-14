@@ -21,7 +21,7 @@ the machine-checked manifest.
 | [Metropolis, Gibbs, and Ising](05_metropolis_gibbs_and_ising.ipynb) | Tune random-walk MH, preserve rejected states, validate small Ising systems exactly, and expose metastability | `sampler-lab-ising-demo --sizes 6 --betas 0.3 0.44 0.6` |
 | [Annealed paths and free energy](06_annealed_paths_and_free_energy.ipynb) | Estimate partition-function ratios with AIS and annealed SMC; inspect work tails, ESS, and schedule resolution | `sampler-lab-annealing-demo --size 2 --target-beta 0.6` |
 | [Langevin sampling](07_langevin_sampling.ipynb) | Diagnose diffusion limits, ULA stability and bias, MALA correction, and preconditioning | `sampler-lab-langevin-demo --condition-numbers 1 10 100` |
-| [Hamiltonian and underdamped dynamics](08_hamiltonian_and_underdamped_dynamics.ipynb) | Inspect phase trajectories, leapfrog errors, mass conditioning, HMC, BAOAB, and metropolized underdamped dynamics | `sampler-lab-hamiltonian-demo --condition-numbers 1 10 100` |
+| [Hamiltonian and underdamped dynamics](08_hamiltonian_and_underdamped_dynamics.ipynb) | Inspect phase trajectories, leapfrog errors, mass conditioning, cost-normalized HMC efficiency, BAOAB, and metropolized underdamped dynamics | `sampler-lab-hamiltonian-demo --condition-numbers 1 10 100` |
 | [Geometry, conditioning, and ensembles](09_geometry_conditioning_and_ensembles.ipynb) | Whiten Gaussians, condition exactly, repair Hessians, and compare stochastic Newton with stretch and walk ensembles | `sampler-lab-geometry-demo --condition-numbers 1 10 100 --walkers 24` |
 
 The remaining notebook families are assigned in [`manifest.toml`](manifest.toml). The manifest is a
