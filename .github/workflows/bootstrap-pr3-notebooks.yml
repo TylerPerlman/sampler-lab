@@ -28,6 +28,28 @@ jobs:
       - run: python -m pip install -e '.[dev,notebooks]'
       - name: Restore notebook generator
         run: base64 -d tools/bootstrap_pr3_notebooks.py.gz.b64 | gzip -d > tools/bootstrap_pr3_notebooks.py
+      - name: Patch generated-code newline escapes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("tools/bootstrap_pr3_notebooks.py")
+          text = path.read_text(encoding="utf-8")
+          replacements = {
+              "estimated covariance rate:\\n": "estimated covariance rate:\\\\n",
+              "exact covariance rate:\\n": "exact covariance rate:\\\\n",
+              "ULA covariance:\\n": "ULA covariance:\\\\n",
+              "MALA covariance:\\n": "MALA covariance:\\\\n",
+              "empirical whitened covariance:\\n": "empirical whitened covariance:\\\\n",
+              "conditional covariance:\\n": "conditional covariance:\\\\n",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise ValueError(f"missing generator source fragment: {old!r}")
+              text = text.replace(old, new)
+          path.write_text(text, encoding="utf-8")
+          PY
+          python -m py_compile tools/bootstrap_pr3_notebooks.py
       - name: Generate PR 3 notebooks and documentation updates
         run: python tools/bootstrap_pr3_notebooks.py
       - name: Execute publication notebooks independently
