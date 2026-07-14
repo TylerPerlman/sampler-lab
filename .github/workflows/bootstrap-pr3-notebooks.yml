@@ -103,13 +103,28 @@ jobs:
           rm tools/bootstrap_pr3_notebooks.py
           rm tools/bootstrap_pr3_notebooks.py.gz.b64
           rm .github/workflows/bootstrap-pr3-notebooks.yml
-      - name: Validate generated suite
-        run: |
-          python tools/check_notebook_manifest.py
-          ruff check .
-          ruff format --check .
-          mkdocs build --strict --site-dir /tmp/sampler-lab-site
-          rm -rf .cache
+      - name: Validate notebook manifest
+        run: python tools/check_notebook_manifest.py
+      - name: Check Ruff lint
+        run: ruff check .
+      - name: Check Ruff formatting
+        run: ruff format --check .
+      - name: Build strict documentation
+        run: mkdocs build --strict --site-dir /tmp/sampler-lab-site
+      - name: Remove documentation cache
+        run: rm -rf .cache
+      - name: Upload validation state
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr3-validation-state
+          path: |
+            README.md
+            mkdocs.yml
+            docs/notebooks/
+            docs/methods/langevin_dynamics.md
+            docs/methods/hamiltonian_dynamics.md
+            docs/methods/conditioning_ensembles.md
       - name: Commit generated notebooks
         run: |
           git config user.name "github-actions[bot]"
