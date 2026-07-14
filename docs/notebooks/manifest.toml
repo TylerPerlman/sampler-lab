@@ -228,26 +228,35 @@ supporting_symbols = [
 [[notebooks]]
 path = "docs/notebooks/10_adaptive_and_learned_sampling.ipynb"
 family = "adaptive and learned sampling"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["exact_invariant", "approximate", "diagnostic"]
 coverage = ["sampler_lab.adaptive.*", "sampler_lab.learning.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.OperationCounter",
+  "sampler_lab.spawn_rngs",
+  "sampler_lab.models.GaussianTarget",
+]
 
 [[notebooks]]
 path = "docs/notebooks/11_rare_event_sampling.ipynb"
 family = "rare-event sampling"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["weighted", "approximate", "diagnostic"]
 coverage = ["sampler_lab.rare_events.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.OperationCounter",
+  "sampler_lab.spawn_rngs",
+]
 
 [[notebooks]]
 path = "docs/notebooks/12_cross_method_benchmarking.ipynb"
 family = "cross-method benchmarking"
-status = "planned"
+status = "implemented"
 mode = "quick-and-publication"
 output_semantics = ["mixed", "diagnostic"]
 coverage = ["sampler_lab.benchmarks.*"]
-supporting_symbols = []
+supporting_symbols = [
+  "sampler_lab.spawn_rngs",
+]

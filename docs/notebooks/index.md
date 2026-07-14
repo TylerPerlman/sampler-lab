@@ -5,9 +5,9 @@ namespaces, fixed named seeds, and method-appropriate diagnostics. The console d
 NumPy-only, print-based reproduction layer; notebooks add derivations, plots, parameter studies, and
 controlled failures.
 
-Ten tutorials now cover the foundations, sequential methods, Markov methods, continuous dynamics,
-and geometry-aware sampling. The learned, rare-event, and benchmark families remain assigned in
-the machine-checked manifest.
+Thirteen tutorials now cover every public sampling namespace in Sampler Lab: foundations,
+sequential methods, Markov methods, continuous dynamics, learned proposals, rare events, and
+capability-aware benchmarking.
 
 ## Start here
 
@@ -23,10 +23,13 @@ the machine-checked manifest.
 | [Langevin sampling](07_langevin_sampling.ipynb) | Diagnose diffusion limits, ULA stability and bias, MALA correction, and preconditioning | `sampler-lab-langevin-demo --condition-numbers 1 10 100` |
 | [Hamiltonian and underdamped dynamics](08_hamiltonian_and_underdamped_dynamics.ipynb) | Inspect phase trajectories, leapfrog errors, mass conditioning, cost-normalized HMC efficiency, BAOAB, and metropolized underdamped dynamics | `sampler-lab-hamiltonian-demo --condition-numbers 1 10 100` |
 | [Geometry, conditioning, and ensembles](09_geometry_conditioning_and_ensembles.ipynb) | Whiten Gaussians, condition exactly, repair Hessians, and compare stochastic Newton with stretch and walk ensembles | `sampler-lab-geometry-demo --condition-numbers 1 10 100 --walkers 24` |
+| [Adaptive and learned sampling](10_adaptive_and_learned_sampling.ipynb) | Separate warmup from frozen evaluation; diagnose objective gaming; compare adaptive MH, policy gradients, variational fits, correction, and SVGD | `sampler-lab-policy-demo --samples 3000 --warmup 1000 --policy-updates 80` |
+| [Rare-event sampling](11_rare_event_sampling.ipynb) | Work in the log domain; compare Laplace asymptotics, tempering, dominant-point twists, and multi-minimizer mixtures | `sampler-lab-rare-event-demo --epsilons 0.5 0.25 0.125 0.0625 --samples 100000` |
+| [Cross-method benchmarking](12_cross_method_benchmarking.ipynb) | Build capability matrices, respect output semantics, aggregate replicates, and construct cost–accuracy Pareto frontiers | `sampler-lab-benchmark --quick --replicates 2 --output-dir benchmark_report` |
 
-The remaining notebook families are assigned in [`manifest.toml`](manifest.toml). The manifest is a
-machine-checked roadmap: every public sampling namespace is either covered by an implemented
-notebook or assigned to a later notebook.
+[`manifest.toml`](manifest.toml) is the machine-checked coverage map. Every public sampling
+symbol now has exactly one tutorial home, while supporting diagnostics and model APIs are listed
+separately.
 
 ## Reproduce locally
 

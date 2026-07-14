@@ -1,5 +1,9 @@
 # Capability-Aware Continuous Benchmarking
 
+!!! tip "Visual tutorial"
+    Work through [Cross-method benchmarking](notebooks/12_cross_method_benchmarking.ipynb) for capability
+    checks, output semantics, replicated metrics, report bundles, and cost–accuracy Pareto frontiers.
+
 The common benchmark compares continuous samplers without pretending that all outputs have the
 same semantics. Independent draws, weighted particles, stationary chains, ensembles, and
 variational particle clouds can share target-level accuracy metrics, but they do not share every

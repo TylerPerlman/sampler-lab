@@ -1,5 +1,9 @@
 # Rare Events and Small-Noise Importance Sampling
 
+!!! tip "Visual tutorial"
+    Work through [Rare-event sampling](../notebooks/11_rare_event_sampling.ipynb) for log-tail stability,
+    Laplace prefactors, tempering, dominant-point twisting, and multiple-minimizer mixtures.
+
 ## Target problem
 
 Phase 11 estimates probabilities that vanish as a noise parameter tends to zero.  The exact
