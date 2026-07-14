@@ -1,5 +1,9 @@
 # Adaptive and Policy-Gradient Sampling
 
+!!! tip "Visual tutorial"
+    Work through [Adaptive and learned sampling](../notebooks/10_adaptive_and_learned_sampling.ipynb)
+    for executed warmup schedules, covariance repair, objective gaming, variational correction, and SVGD comparisons.
+
 This module develops adaptive and policy-based sampling as a set of transparent
 adaptive, reinforcement-learning, variational, and Stein methods. The central rule is that
 **training and sampling are different phases**. Warmup trajectories diagnose and optimize a
