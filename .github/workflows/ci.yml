@@ -122,7 +122,7 @@ jobs:
         run: pytest --nbmake docs/notebooks/*.ipynb --nbmake-timeout=300 --overwrite
       - name: Upload executed quick-mode notebooks
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tutorial-notebooks-quick
           path: docs/notebooks/*.ipynb
@@ -139,7 +139,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
       - run: pytest -m "not statistical" --cov=sampler_lab --cov-report=term-missing --cov-report=xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-xml
           path: coverage.xml
